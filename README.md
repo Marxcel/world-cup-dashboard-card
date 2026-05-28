@@ -6,6 +6,24 @@ A HACS-installable Lovelace card for FIFA World Cup 2026 dashboards. It reads Te
 
 ![World Cup bracket view](docs/images/world-cup-bracket.png)
 
+## More Screenshots
+
+Favorite team and tracked teams:
+
+![Favorite team and tracked teams](docs/images/world-cup-favorite-teams.png)
+
+Alert settings and notification targets:
+
+![Alert settings and notification targets](docs/images/world-cup-alert-settings.png)
+
+Schedule and dashboard status:
+
+![Schedule and dashboard status](docs/images/world-cup-schedule-links.png)
+
+Bracket board:
+
+![Bracket board](docs/images/world-cup-bracket-board.png)
+
 ## What It Does
 
 - Uses your existing TeamTracker sensors.
