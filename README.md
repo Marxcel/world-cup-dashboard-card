@@ -2,6 +2,10 @@
 
 A HACS-installable Lovelace card for FIFA World Cup 2026 dashboards. It reads TeamTracker sensors and builds a clean match center with favorite-team focus, today's matches, upcoming matches, tracked teams, alert settings, quick test buttons, and an auto-updating knockout section.
 
+![World Cup dashboard overview](docs/images/world-cup-overview.png)
+
+![World Cup bracket view](docs/images/world-cup-bracket.png)
+
 ## What It Does
 
 - Uses your existing TeamTracker sensors.
@@ -12,6 +16,18 @@ A HACS-installable Lovelace card for FIFA World Cup 2026 dashboards. It reads Te
 - Provides optional test buttons for selected speaker/TTS and phone notification helpers.
 - Includes an overview mode and a bracket-only mode.
 
+## Screenshot Setup
+
+The screenshots above use:
+
+- Theme: Catppuccin
+- Home Assistant dashboard mode: panel cards for the card views
+- Card config: `examples/full-dashboard.yaml`
+- Team data: TeamTracker with all 48 World Cup 2026 teams
+- Optional helpers: `examples/helpers-package.yaml`
+
+The card has its own World Cup colors, so it works with other themes too. Catppuccin gives the surrounding Home Assistant shell the same dark purple look shown in the screenshots.
+
 ## What HACS Can And Cannot Do
 
 HACS installs the dashboard card resource automatically. Home Assistant does not allow a HACS frontend card to automatically create dashboards, tabs, helpers, TeamTracker entries, phones, speakers, or automations for a user.
@@ -21,8 +37,9 @@ To make it look like the screenshots, users should:
 1. Install this card from HACS.
 2. Install TeamTracker and add the teams they want to follow.
 3. Add the optional helpers from `examples/helpers-package.yaml`.
-4. Copy `examples/full-dashboard.yaml` into a dashboard raw editor.
-5. Choose their own favorite team, phone notification service, speaker, and TTS service from the dashboard controls.
+4. Install/apply the Catppuccin theme if they want the same surrounding Home Assistant style.
+5. Copy `examples/full-dashboard.yaml` into a dashboard raw editor.
+6. Choose their own favorite team, phone notification service, speaker, and TTS service from the dashboard controls.
 
 ## Requirements
 
@@ -107,6 +124,20 @@ The bracket tab uses:
 view_mode: bracket
 ```
 
+## Make It Look Like The Screenshots
+
+1. Install the Catppuccin theme in Home Assistant.
+2. Apply the theme from your Home Assistant profile.
+3. Install TeamTracker from HACS.
+4. Add TeamTracker entries for the teams you want. Use all 48 teams for the full screenshot layout.
+5. Install this card from HACS.
+6. Add helpers from `examples/helpers-package.yaml`, or create matching helpers manually.
+7. Paste `examples/full-dashboard.yaml` into a dashboard raw configuration editor.
+8. Change the `team_sensors` list if your TeamTracker entity IDs are different.
+9. Select your own favorite team, phone notification service, announcement speaker, and TTS service in the Alert Settings card.
+
+The bracket tab auto-fills only when TeamTracker/ESPN publishes real knockout matchups. Until then, the bracket intentionally shows clean `TBD` slots instead of fake predictions.
+
 ## Optional Helpers
 
 Copy `examples/helpers-package.yaml` into a Home Assistant package, or create the helpers manually.
@@ -137,3 +168,12 @@ Each user should create automations from the blueprints and select their own Tea
 ## Public Sharing Notes
 
 Do not hardcode personal entities in shared YAML. Use helpers for phones, speakers, TTS entities, notification services, and favorite teams. This card follows that pattern so it can be shared safely.
+
+## Recommended Additions
+
+For a polished public install, also consider adding:
+
+- A short YouTube or GIF walkthrough.
+- A HACS default-repository submission once the card has a few users testing it.
+- Example automations built from the included blueprints.
+- A list of known TeamTracker entity naming examples from real installs.
