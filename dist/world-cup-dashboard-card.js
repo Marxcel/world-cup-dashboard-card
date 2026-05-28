@@ -46,10 +46,9 @@ class WorldCupDashboardCard extends HTMLElement {
       this.shadowRoot.innerHTML = `
         <style>${this.styles()}</style>
         <ha-card>
-          <div class="wc-wrap">
+          <div class="wc-wrap bracket-page">
             ${this.renderHero()}
             ${this.renderKnockout(knockout)}
-            ${this.renderOpeningMatches()}
           </div>
         </ha-card>
       `;
@@ -357,31 +356,95 @@ class WorldCupDashboardCard extends HTMLElement {
   }
 
   renderKnockout(matches) {
-    const rounds = ["Round of 32", "Round of 16", "Quarter Finals", "Semi Finals", "Final"];
-    const cards = matches.length ? matches : Array.from({ length: 16 }, (_, index) => ({
-      abbr: `R32 ${index + 1}`,
-      opponent: "TBD",
-      status: "Waiting for real matchup"
-    }));
+    const byRound = this.getBracketRounds(matches);
     return `
       <section class="panel bracket color-field">
         <div class="section-head">
-          <h2>Auto Knockout Bracket</h2>
+          <h2>World Cup Auto Bracket</h2>
           <span>${matches.length ? "Live data" : "Waiting for knockout stage"}</span>
         </div>
-        <div class="round-labels">${rounds.map((round) => `<strong>${round}</strong>`).join("")}</div>
-        <div class="bracket-grid">
-          ${cards.slice(0, 16).map((match) => `
-            <article class="bracket-slot">
-              <span>${this.escape(match.abbr || "TBD")}</span>
-              <b>${this.renderScore(match)}</b>
-              <span>${this.escape(match.opponentAbbr || match.opponent || "TBD")}</span>
-            </article>
-          `).join("")}
+        <div class="bracket-board" aria-label="World Cup knockout bracket">
+          ${this.renderBracketColumn("Round of 32", byRound.r32.slice(0, 8), 8, "r32")}
+          ${this.renderBracketColumn("Round of 16", byRound.r16.slice(0, 4), 4, "r16")}
+          ${this.renderBracketColumn("Quarter Finals", byRound.qf.slice(0, 2), 2, "qf")}
+          ${this.renderBracketColumn("Semi Finals", byRound.sf.slice(0, 1), 1, "sf")}
+          <div class="bracket-final">
+            <div class="round-title">Final</div>
+            ${this.renderBracketSlot(byRound.final[0], "Final", 101)}
+            <div class="champion-card">
+              <span>Champions</span>
+              <strong>${this.getChampionName(matches)}</strong>
+            </div>
+          </div>
+          ${this.renderBracketColumn("Semi Finals", byRound.sf.slice(1, 2), 1, "sf")}
+          ${this.renderBracketColumn("Quarter Finals", byRound.qf.slice(2, 4), 2, "qf")}
+          ${this.renderBracketColumn("Round of 16", byRound.r16.slice(4, 8), 4, "r16")}
+          ${this.renderBracketColumn("Round of 32", byRound.r32.slice(8, 16), 8, "r32")}
         </div>
         <p class="muted">The bracket updates from TeamTracker when real knockout matchups are available. It does not use prediction placeholders.</p>
       </section>
     `;
+  }
+
+  getBracketRounds(matches) {
+    const rounds = { r32: [], r16: [], qf: [], sf: [], final: [] };
+    matches.forEach((match) => {
+      const round = String(match.round || "").toLowerCase();
+      if (round.includes("round of 32")) rounds.r32.push(match);
+      else if (round.includes("round of 16")) rounds.r16.push(match);
+      else if (round.includes("quarter")) rounds.qf.push(match);
+      else if (round.includes("semi")) rounds.sf.push(match);
+      else if (round.includes("final")) rounds.final.push(match);
+    });
+    Object.values(rounds).forEach((round) => round.sort((a, b) => (a.date || 0) - (b.date || 0)));
+    return rounds;
+  }
+
+  renderBracketColumn(title, matches, count, className) {
+    return `
+      <div class="bracket-col ${className}">
+        <div class="round-title">${this.escape(title)}</div>
+        ${Array.from({ length: count }, (_, index) => this.renderBracketSlot(matches[index], title, index + 1)).join("")}
+      </div>
+    `;
+  }
+
+  renderBracketSlot(match, title, index) {
+    if (!match) {
+      return `
+        <article class="bracket-slot empty">
+          <small>${this.escape(title)} ${index}</small>
+          <div class="slot-team"><span class="team-line"></span><span>TBD</span></div>
+          <div class="slot-team"><span class="team-line"></span><span>TBD</span></div>
+        </article>
+      `;
+    }
+    return `
+      <article class="bracket-slot ${match.winner || match.opponentWinner ? "played" : ""}">
+        <small>${this.escape(this.formatDate(match.date) || match.status || title)}</small>
+        ${this.renderBracketTeam(match.logo, match.abbr, match.score, match.winner)}
+        ${this.renderBracketTeam(match.opponentLogo, match.opponentAbbr || match.opponent, match.opponentScore, match.opponentWinner)}
+      </article>
+    `;
+  }
+
+  renderBracketTeam(logo, label, score, winner) {
+    const hasScore = score !== undefined && score !== null && score !== "";
+    return `
+      <div class="slot-team ${winner ? "winner-team" : ""}">
+        ${logo ? `<img src="${this.escape(logo)}" alt="${this.escape(label)}">` : `<span class="team-line"></span>`}
+        <span>${this.escape(label || "TBD")}</span>
+        ${hasScore ? `<strong>${this.escape(score)}</strong>` : ""}
+      </div>
+    `;
+  }
+
+  getChampionName(matches) {
+    const final = this.getBracketRounds(matches).final[0];
+    if (!final) return "TBD";
+    if (final.winner) return final.abbr || final.name || "TBD";
+    if (final.opponentWinner) return final.opponentAbbr || final.opponent || "TBD";
+    return "TBD";
   }
 
   renderTeamBadge(logo, abbr, winner) {
@@ -500,6 +563,9 @@ class WorldCupDashboardCard extends HTMLElement {
         display: flex;
         flex-direction: column;
         gap: 14px;
+      }
+      .bracket-page {
+        gap: 10px;
       }
       .grid {
         display: grid;
@@ -657,33 +723,112 @@ class WorldCupDashboardCard extends HTMLElement {
       .warn { color: var(--wc-red); }
       .bracket {
         overflow: auto;
+        padding: 14px;
       }
-      .round-labels {
+      .bracket-board {
         display: grid;
-        grid-template-columns: repeat(5, minmax(120px, 1fr));
-        gap: 8px;
-        margin: 14px 0 8px;
-        min-width: 720px;
+        grid-template-columns: 1.15fr 1fr 0.92fr 0.82fr 1.05fr 0.82fr 0.92fr 1fr 1.15fr;
+        gap: 7px;
+        min-width: 1120px;
+        margin-top: 12px;
+        align-items: stretch;
+      }
+      .bracket-col,
+      .bracket-final {
+        display: grid;
+        gap: 7px;
+        align-content: stretch;
+      }
+      .bracket-col.r32 { grid-template-rows: auto repeat(8, minmax(54px, 1fr)); }
+      .bracket-col.r16 { grid-template-rows: auto repeat(4, minmax(112px, 1fr)); }
+      .bracket-col.qf { grid-template-rows: auto repeat(2, minmax(232px, 1fr)); }
+      .bracket-col.sf { grid-template-rows: auto minmax(472px, 1fr); }
+      .bracket-final { grid-template-rows: auto minmax(210px, 1fr) auto; }
+      .round-title {
+        min-height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.72);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 900;
         text-align: center;
-      }
-      .bracket-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(150px, 1fr));
-        gap: 10px;
-        min-width: 720px;
+        text-transform: uppercase;
       }
       .bracket-slot {
-        min-height: 58px;
-        border: 2px solid rgba(255, 255, 255, 0.42);
-        border-left-width: 8px;
-        border-radius: 8px;
-        padding: 8px;
-        background: rgba(255,255,255,0.9);
+        min-width: 0;
+        border: 2px solid rgba(15, 18, 28, 0.94);
+        border-radius: 7px;
+        padding: 7px;
+        background: rgba(255,255,255,0.96);
         color: #10131d;
         display: grid;
-        grid-template-columns: 1fr auto 1fr;
+        grid-template-rows: auto 1fr 1fr;
+        gap: 5px;
+        align-content: center;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
+      }
+      .bracket-slot.empty {
+        background: rgba(255,255,255,0.88);
+        color: rgba(16, 19, 29, 0.72);
+      }
+      .bracket-slot small {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        color: rgba(16, 19, 29, 0.62);
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+      .slot-team {
+        min-width: 0;
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr) auto;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        font-weight: 900;
+        line-height: 1.1;
+      }
+      .slot-team img {
+        width: 26px;
+        height: 18px;
+        object-fit: contain;
+      }
+      .slot-team span:nth-child(2) {
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      .team-line {
+        width: 26px;
+        height: 3px;
+        border-radius: 99px;
+        background: rgba(16, 19, 29, 0.35);
+      }
+      .winner-team {
+        color: #08783d;
+      }
+      .champion-card {
+        border-radius: 8px;
+        padding: 13px 10px;
+        text-align: center;
+        color: #fff;
+        background: linear-gradient(135deg, #d9283f, #f4bd50);
+        text-transform: uppercase;
+      }
+      .champion-card span {
+        display: block;
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .champion-card strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 24px;
       }
       @media (max-width: 1100px) {
         .grid { grid-template-columns: repeat(2, minmax(240px, 1fr)); }
