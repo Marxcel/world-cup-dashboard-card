@@ -8,3 +8,4 @@
 - Added a full two-view dashboard example with a bracket tab.
 - Tightened the default bracket view into a compact left-to-right tournament board with no extra opening-match cards.
 - Added public screenshots and setup documentation for matching the Catppuccin-themed dashboard.
+- Cleaned up README wording for public documentation.

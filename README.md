@@ -30,16 +30,16 @@ The card has its own World Cup colors, so it works with other themes too. Catppu
 
 ## What HACS Can And Cannot Do
 
-HACS installs the dashboard card resource automatically. Home Assistant does not allow a HACS frontend card to automatically create dashboards, tabs, helpers, TeamTracker entries, phones, speakers, or automations for a user.
+HACS installs the dashboard card resource automatically. Home Assistant does not allow a HACS frontend card to automatically create dashboards, tabs, helpers, TeamTracker entries, phones, speakers, or automations.
 
-To make it look like the screenshots, users should:
+To match the screenshots:
 
 1. Install this card from HACS.
-2. Install TeamTracker and add the teams they want to follow.
+2. Install TeamTracker and add the teams to follow.
 3. Add the optional helpers from `examples/helpers-package.yaml`.
-4. Install/apply the Catppuccin theme if they want the same surrounding Home Assistant style.
+4. Install and apply the Catppuccin theme for the same surrounding Home Assistant style.
 5. Copy `examples/full-dashboard.yaml` into a dashboard raw editor.
-6. Choose their own favorite team, phone notification service, speaker, and TTS service from the dashboard controls.
+6. Choose a favorite team, phone notification service, speaker, and TTS service from the dashboard controls.
 
 ## Requirements
 
@@ -163,17 +163,8 @@ The `blueprints/` folder includes optional automation blueprints:
 - Match started
 - Final score
 
-Each user should create automations from the blueprints and select their own TeamTracker sensor, media player, TTS service, and notification service.
+Create automations from the blueprints and select the TeamTracker sensor, media player, TTS service, and notification service for the Home Assistant instance.
 
 ## Public Sharing Notes
 
 Do not hardcode personal entities in shared YAML. Use helpers for phones, speakers, TTS entities, notification services, and favorite teams. This card follows that pattern so it can be shared safely.
-
-## Recommended Additions
-
-For a polished public install, also consider adding:
-
-- A short YouTube or GIF walkthrough.
-- A HACS default-repository submission once the card has a few users testing it.
-- Example automations built from the included blueprints.
-- A list of known TeamTracker entity naming examples from real installs.
