@@ -1,0 +1,76 @@
+blueprint:
+  name: World Cup Match Started
+  description: Announce when a TeamTracker match changes to live/in progress. Create one automation per team.
+  domain: automation
+  input:
+    team_sensor:
+      name: TeamTracker sensor
+      selector:
+        entity:
+          domain: sensor
+    enabled_toggle:
+      name: Optional enable toggle
+      description: Pick an input_boolean if you want a dashboard switch to enable or disable this alert.
+      default: ""
+      selector:
+        entity:
+          domain: input_boolean
+    speaker_toggle:
+      name: Optional speaker announcement toggle
+      description: Pick an input_boolean if you want a dashboard switch to enable or disable the speaker announcement.
+      default: ""
+      selector:
+        entity:
+          domain: input_boolean
+    tts_entity:
+      name: TTS entity
+      selector:
+        entity:
+          domain: tts
+    announcement_player:
+      name: Announcement media player
+      selector:
+        entity:
+          domain: media_player
+    extra_actions:
+      name: Optional extra actions
+      description: Add a phone notification or any other action here.
+      default: []
+      selector:
+        action: {}
+
+trigger:
+  - platform: state
+    entity_id: !input team_sensor
+    to: "IN"
+
+variables:
+  team_sensor: !input team_sensor
+  enabled_toggle: !input enabled_toggle
+  speaker_toggle: !input speaker_toggle
+
+condition:
+  - condition: template
+    value_template: "{{ enabled_toggle | length == 0 or is_state(enabled_toggle, 'on') }}"
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ speaker_toggle | length == 0 or is_state(speaker_toggle, 'on') }}"
+        sequence:
+          - service: tts.speak
+            target:
+              entity_id: !input tts_entity
+            data:
+              media_player_entity_id: !input announcement_player
+              cache: true
+              message: >
+                World Cup match started.
+                {{ state_attr(team_sensor, 'team_long_name') or trigger.to_state.name }}
+                is playing {{ state_attr(team_sensor, 'opponent_name') or 'their opponent' }}.
+  - choose: []
+    default: !input extra_actions
+
+mode: queued
+max: 5

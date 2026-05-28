@@ -1,0 +1,90 @@
+blueprint:
+  name: World Cup Kickoff Reminder
+  description: Announce a TeamTracker match before kickoff. Create one automation per team.
+  domain: automation
+  input:
+    team_sensor:
+      name: TeamTracker sensor
+      selector:
+        entity:
+          domain: sensor
+    reminder_minutes:
+      name: Minutes before kickoff
+      default: 30
+      selector:
+        number:
+          min: 1
+          max: 180
+          unit_of_measurement: min
+          mode: box
+    enabled_toggle:
+      name: Optional enable toggle
+      description: Pick an input_boolean if you want a dashboard switch to enable or disable this reminder.
+      default: ""
+      selector:
+        entity:
+          domain: input_boolean
+    speaker_toggle:
+      name: Optional speaker announcement toggle
+      description: Pick an input_boolean if you want a dashboard switch to enable or disable the speaker announcement.
+      default: ""
+      selector:
+        entity:
+          domain: input_boolean
+    tts_entity:
+      name: TTS entity
+      selector:
+        entity:
+          domain: tts
+    announcement_player:
+      name: Announcement media player
+      selector:
+        entity:
+          domain: media_player
+    extra_actions:
+      name: Optional extra actions
+      description: Add a phone notification or any other action here.
+      default: []
+      selector:
+        action: {}
+
+variables:
+  team_sensor: !input team_sensor
+  reminder_minutes: !input reminder_minutes
+  enabled_toggle: !input enabled_toggle
+  speaker_toggle: !input speaker_toggle
+
+trigger:
+  - platform: time_pattern
+    minutes: "/1"
+
+condition:
+  - condition: template
+    value_template: "{{ enabled_toggle | length == 0 or is_state(enabled_toggle, 'on') }}"
+  - condition: template
+    value_template: >
+      {% set kickoff = as_timestamp(state_attr(team_sensor, 'date'), none) %}
+      {% set seconds_before = reminder_minutes | int(30) * 60 %}
+      {{ kickoff is not none and seconds_before - 60 < kickoff - as_timestamp(now()) <= seconds_before }}
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ speaker_toggle | length == 0 or is_state(speaker_toggle, 'on') }}"
+        sequence:
+          - service: tts.speak
+            target:
+              entity_id: !input tts_entity
+            data:
+              media_player_entity_id: !input announcement_player
+              cache: true
+              message: >
+                World Cup reminder.
+                {{ state_attr(team_sensor, 'team_long_name') or states[team_sensor].name }}
+                plays {{ state_attr(team_sensor, 'opponent_name') or 'their opponent' }}
+                in about {{ reminder_minutes | int(30) }} minutes.
+  - choose: []
+    default: !input extra_actions
+
+mode: single

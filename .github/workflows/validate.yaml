@@ -1,0 +1,21 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Check JavaScript syntax
+        run: node --check dist/world-cup-dashboard-card.js
+      - name: Check required HACS files
+        run: |
+          test -f hacs.json
+          test -f README.md
+          test -f dist/world-cup-dashboard-card.js

@@ -1,0 +1,101 @@
+input_boolean:
+  world_cup_kickoff_alerts_enabled:
+    name: World Cup kickoff reminders
+    icon: mdi:bell-ring-outline
+  world_cup_match_start_alerts_enabled:
+    name: World Cup match-start alerts
+    icon: mdi:play-circle-outline
+  world_cup_final_score_alerts_enabled:
+    name: World Cup final-score alerts
+    icon: mdi:flag-checkered
+  world_cup_speaker_announcements_enabled:
+    name: World Cup speaker announcements
+    icon: mdi:speaker-message
+  world_cup_phone_notifications_enabled:
+    name: World Cup phone notifications
+    icon: mdi:cellphone-message
+  world_cup_match_day_mode:
+    name: World Cup match day mode
+    icon: mdi:trophy-outline
+
+input_number:
+  world_cup_reminder_minutes:
+    name: World Cup reminder minutes
+    icon: mdi:timer-alert-outline
+    min: 1
+    max: 180
+    step: 1
+    unit_of_measurement: min
+    mode: box
+
+input_select:
+  world_cup_announcement_player:
+    name: World Cup announcement player
+    icon: mdi:cast-audio
+    options:
+      - media_player.your_speaker
+      - media_player.your_display
+  world_cup_tts_entity:
+    name: World Cup TTS voice/service
+    icon: mdi:text-to-speech
+    options:
+      - tts.home_assistant_cloud
+      - tts.google_translate_en_com
+  world_cup_notification_service:
+    name: World Cup notification service
+    icon: mdi:bell-badge-outline
+    options:
+      - notify.mobile_app_your_phone
+      - notify.notify
+  world_cup_favorite_team:
+    name: World Cup favorite team
+    icon: mdi:soccer
+    options:
+      - USA
+      - CAN
+      - MEX
+      - ARG
+      - BRA
+      - COL
+      - ECU
+      - PAR
+      - URU
+      - AUS
+      - IRQ
+      - IRN
+      - JPN
+      - JOR
+      - KOR
+      - QAT
+      - KSA
+      - UZB
+      - ALG
+      - CPV
+      - COD
+      - CIV
+      - EGY
+      - GHA
+      - MAR
+      - SEN
+      - RSA
+      - TUN
+      - CUW
+      - HAI
+      - PAN
+      - NZL
+      - AUT
+      - BEL
+      - BIH
+      - CRO
+      - CZE
+      - ENG
+      - FRA
+      - GER
+      - NED
+      - NOR
+      - POR
+      - SCO
+      - ESP
+      - SWE
+      - SUI
+      - TUR
