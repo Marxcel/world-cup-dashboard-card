@@ -10,6 +10,19 @@ A HACS-installable Lovelace card for FIFA World Cup 2026 dashboards. It reads Te
 - Shows scores only when TeamTracker has real match data.
 - Leaves knockout slots blank until TeamTracker/ESPN publishes real knockout matchups.
 - Provides optional test buttons for selected speaker/TTS and phone notification helpers.
+- Includes an overview mode and a bracket-only mode.
+
+## What HACS Can And Cannot Do
+
+HACS installs the dashboard card resource automatically. Home Assistant does not allow a HACS frontend card to automatically create dashboards, tabs, helpers, TeamTracker entries, phones, speakers, or automations for a user.
+
+To make it look like the screenshots, users should:
+
+1. Install this card from HACS.
+2. Install TeamTracker and add the teams they want to follow.
+3. Add the optional helpers from `examples/helpers-package.yaml`.
+4. Copy `examples/full-dashboard.yaml` into a dashboard raw editor.
+5. Choose their own favorite team, phone notification service, speaker, and TTS service from the dashboard controls.
 
 ## Requirements
 
@@ -68,6 +81,31 @@ show_controls: true
 ```
 
 More examples are in `examples/`.
+
+## Full Dashboard With Bracket Tab
+
+For the closest out-of-the-box dashboard experience, use:
+
+```text
+examples/full-dashboard.yaml
+```
+
+It creates two views when pasted into a dashboard raw editor:
+
+- `World Cup`
+- `Bracket`
+
+The first view uses:
+
+```yaml
+view_mode: overview
+```
+
+The bracket tab uses:
+
+```yaml
+view_mode: bracket
+```
 
 ## Optional Helpers
 

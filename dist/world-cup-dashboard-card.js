@@ -16,6 +16,7 @@ class WorldCupDashboardCard extends HTMLElement {
     this.config = {
       title: "World Cup 2026",
       show_controls: true,
+      view_mode: "overview",
       ...config
     };
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
@@ -41,6 +42,21 @@ class WorldCupDashboardCard extends HTMLElement {
     const nextMatches = this.uniqueMatches(teams).filter((match) => match.date && match.date >= new Date()).slice(0, 8);
     const knockout = this.getKnockoutMatches(teams);
 
+    if (this.config.view_mode === "bracket") {
+      this.shadowRoot.innerHTML = `
+        <style>${this.styles()}</style>
+        <ha-card>
+          <div class="wc-wrap">
+            ${this.renderHero()}
+            ${this.renderKnockout(knockout)}
+            ${this.renderOpeningMatches()}
+          </div>
+        </ha-card>
+      `;
+      this.bindEvents();
+      return;
+    }
+
     this.shadowRoot.innerHTML = `
       <style>${this.styles()}</style>
       <ha-card>
@@ -54,6 +70,7 @@ class WorldCupDashboardCard extends HTMLElement {
             </div>
             <div class="column">
               ${this.renderTrackedTeams(teams, favorite)}
+              ${this.renderFavoritePanel(favoriteMatch)}
               ${this.renderOpeningMatches()}
             </div>
             <div class="column">
@@ -62,7 +79,6 @@ class WorldCupDashboardCard extends HTMLElement {
               ${this.renderLinks()}
             </div>
           </section>
-          ${this.renderKnockout(knockout)}
           ${this.renderMatchList("Upcoming Tracked Matches", nextMatches, "No upcoming tracked matches found.")}
         </div>
       </ha-card>
@@ -201,6 +217,23 @@ class WorldCupDashboardCard extends HTMLElement {
               </div>
             </article>
           `).join("")}
+        </div>
+      </section>
+    `;
+  }
+
+  renderFavoritePanel(match) {
+    if (!match) return "";
+    return `
+      <section class="panel color-blue">
+        <p class="eyebrow">Favorite Team</p>
+        <h2>${this.escape(match.name)}</h2>
+        <div class="facts">
+          <span>Next match: ${this.escape(match.name)} vs ${this.escape(match.opponent)}</span>
+          <span>Status: ${this.escape(match.status || "Unknown")}</span>
+          <span>Kickoff: ${this.formatDate(match.date) || "TBD"}</span>
+          <span>Venue: ${this.escape(match.venue || "TBD")}</span>
+          <span>TV: ${this.escape(match.tv || "TBD")}</span>
         </div>
       </section>
     `;

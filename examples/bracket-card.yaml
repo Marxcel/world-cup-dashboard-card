@@ -1,0 +1,52 @@
+type: custom:world-cup-dashboard-card
+title: World Cup 2026 Bracket
+view_mode: bracket
+team_sensors:
+  - sensor.can
+  - sensor.mex
+  - sensor.usa
+  - sensor.aus
+  - sensor.irq
+  - sensor.irn
+  - sensor.jpn
+  - sensor.jor
+  - sensor.kor
+  - sensor.qat
+  - sensor.ksa
+  - sensor.uzb
+  - sensor.alg
+  - sensor.cpv
+  - sensor.cod
+  - sensor.civ
+  - sensor.egy
+  - sensor.gha
+  - sensor.mar
+  - sensor.sen
+  - sensor.rsa
+  - sensor.tun
+  - sensor.cuw
+  - sensor.hai
+  - sensor.pan
+  - sensor.arg
+  - sensor.bra
+  - sensor.col
+  - sensor.ecu
+  - sensor.par
+  - sensor.uru
+  - sensor.nzl
+  - sensor.aut
+  - sensor.bel
+  - sensor.bih
+  - sensor.cro
+  - sensor.cze
+  - sensor.eng
+  - sensor.fra
+  - sensor.ger
+  - sensor.ned
+  - sensor.nor
+  - sensor.por
+  - sensor.sco
+  - sensor.esp
+  - sensor.swe
+  - sensor.sui
+  - sensor.tur
