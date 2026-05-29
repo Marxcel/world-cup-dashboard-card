@@ -812,11 +812,12 @@ class WorldCupDashboardCard extends HTMLElement {
       .ok { color: var(--wc-green); }
       .warn { color: var(--wc-red); }
       .bracket {
-        overflow: auto;
+        overflow-x: auto;
+        overflow-y: visible;
         padding: 14px;
-        overscroll-behavior: contain;
+        overscroll-behavior-x: contain;
+        overscroll-behavior-y: auto;
         -webkit-overflow-scrolling: touch;
-        touch-action: pan-x pan-y;
       }
       .bracket-board {
         display: grid;

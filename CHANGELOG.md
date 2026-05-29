@@ -13,3 +13,4 @@
 - Fixed bracket horizontal scroll resetting during Home Assistant state updates.
 - Reduced unnecessary re-renders so unrelated Home Assistant state updates do not interrupt bracket scrolling.
 - Limited bracket-mode re-renders to actual knockout data changes and added mobile scroll containment.
+- Restored easier vertical page scrolling in bracket mode while keeping horizontal bracket scroll containment.
