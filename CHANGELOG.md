@@ -10,3 +10,4 @@
 - Added public screenshots and setup documentation for matching the Catppuccin-themed dashboard.
 - Cleaned up README wording for public documentation.
 - Added focused README screenshots for favorite teams, alert settings, schedule/status, and bracket board.
+- Fixed bracket horizontal scroll resetting during Home Assistant state updates.

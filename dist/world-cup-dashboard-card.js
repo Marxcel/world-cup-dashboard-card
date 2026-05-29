@@ -34,6 +34,7 @@ class WorldCupDashboardCard extends HTMLElement {
 
   render() {
     if (!this.shadowRoot || !this.config || !this._hass) return;
+    const scrollState = this.captureScrollState();
     const teams = this.getTeamRows();
     const favorite = this.getHelperState(this.config.favorite_team_helper) || this.config.favorite_team || "";
     const favoriteMatch = teams.find((team) => team.abbr === favorite || team.name === favorite) || teams[0];
@@ -53,6 +54,7 @@ class WorldCupDashboardCard extends HTMLElement {
         </ha-card>
       `;
       this.bindEvents();
+      this.restoreScrollState(scrollState);
       return;
     }
 
@@ -84,6 +86,28 @@ class WorldCupDashboardCard extends HTMLElement {
     `;
 
     this.bindEvents();
+    this.restoreScrollState(scrollState);
+  }
+
+  captureScrollState() {
+    if (!this.shadowRoot) return {};
+    const bracket = this.shadowRoot.querySelector(".bracket");
+    return {
+      bracketLeft: bracket ? bracket.scrollLeft : 0,
+      bracketTop: bracket ? bracket.scrollTop : 0
+    };
+  }
+
+  restoreScrollState(scrollState = {}) {
+    const restore = () => {
+      const bracket = this.shadowRoot?.querySelector(".bracket");
+      if (!bracket) return;
+      bracket.scrollLeft = scrollState.bracketLeft || 0;
+      bracket.scrollTop = scrollState.bracketTop || 0;
+    };
+    restore();
+    queueMicrotask(restore);
+    requestAnimationFrame(restore);
   }
 
   getTeamRows() {
