@@ -19,12 +19,19 @@ class WorldCupDashboardCard extends HTMLElement {
       view_mode: "overview",
       ...config
     };
+    this._hasRendered = false;
+    this._renderSignature = "";
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
     this.render();
   }
 
   set hass(hass) {
     this._hass = hass;
+    if (this.config) {
+      const nextSignature = this.getRenderSignature();
+      if (this._hasRendered && this._renderSignature === nextSignature) return;
+      this._renderSignature = nextSignature;
+    }
     this.render();
   }
 
@@ -87,6 +94,7 @@ class WorldCupDashboardCard extends HTMLElement {
 
     this.bindEvents();
     this.restoreScrollState(scrollState);
+    this._hasRendered = true;
   }
 
   captureScrollState() {
@@ -108,6 +116,33 @@ class WorldCupDashboardCard extends HTMLElement {
     restore();
     queueMicrotask(restore);
     requestAnimationFrame(restore);
+  }
+
+  getRenderSignature() {
+    if (!this._hass || !this.config) return "";
+    const helperEntities = [
+      this.config.favorite_team_helper,
+      this.config.announcement_player_helper,
+      this.config.tts_entity_helper,
+      this.config.notification_service_helper,
+      "input_boolean.world_cup_kickoff_alerts_enabled",
+      "input_boolean.world_cup_match_start_alerts_enabled",
+      "input_boolean.world_cup_final_score_alerts_enabled",
+      "input_boolean.world_cup_speaker_announcements_enabled",
+      "input_boolean.world_cup_phone_notifications_enabled",
+      "input_number.world_cup_reminder_minutes"
+    ].filter(Boolean);
+    const entityIds = [...new Set([...(this.config.team_sensors || []), ...helperEntities])];
+    return JSON.stringify({
+      title: this.config.title,
+      mode: this.config.view_mode,
+      showControls: this.config.show_controls,
+      entities: entityIds.map((entityId) => {
+        const state = this._hass.states[entityId];
+        if (!state) return [entityId, null];
+        return [entityId, state.state, state.attributes || {}];
+      })
+    });
   }
 
   getTeamRows() {

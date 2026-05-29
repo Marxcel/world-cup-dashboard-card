@@ -11,3 +11,4 @@
 - Cleaned up README wording for public documentation.
 - Added focused README screenshots for favorite teams, alert settings, schedule/status, and bracket board.
 - Fixed bracket horizontal scroll resetting during Home Assistant state updates.
+- Reduced unnecessary re-renders so unrelated Home Assistant state updates do not interrupt bracket scrolling.
