@@ -120,6 +120,7 @@ class WorldCupDashboardCard extends HTMLElement {
 
   getRenderSignature() {
     if (!this._hass || !this.config) return "";
+    if (this.config.view_mode === "bracket") return this.getBracketRenderSignature();
     const helperEntities = [
       this.config.favorite_team_helper,
       this.config.announcement_player_helper,
@@ -141,6 +142,36 @@ class WorldCupDashboardCard extends HTMLElement {
         const state = this._hass.states[entityId];
         if (!state) return [entityId, null];
         return [entityId, state.state, state.attributes || {}];
+      })
+    });
+  }
+
+  getBracketRenderSignature() {
+    const teamSensors = this.config.team_sensors || [];
+    const knockoutWords = ["round of 32", "round of 16", "quarter", "semi", "final"];
+    return JSON.stringify({
+      title: this.config.title,
+      mode: this.config.view_mode,
+      teams: teamSensors.map((entityId) => {
+        const state = this._hass.states[entityId];
+        if (!state) return [entityId, null];
+        const attr = state.attributes || {};
+        const round = String(this.first(attr.round, attr.event_name, attr.league, "")).toLowerCase();
+        const season = String(attr.season || "").toLowerCase();
+        const isKnockout = knockoutWords.some((word) => round.includes(word)) || Boolean(season && season !== "group-stage");
+        if (!isKnockout) return [entityId, "no-knockout-data"];
+        return [
+          entityId,
+          this.first(attr.event_url, attr.url, ""),
+          this.first(attr.date, attr.event_date, attr.kickoff, attr.match_date, ""),
+          this.first(attr.round, attr.event_name, ""),
+          this.first(attr.team_abbr, attr.team_id, attr.team_abbreviation, ""),
+          this.first(attr.opponent_abbr, attr.opponent_id, attr.opponent_abbreviation, ""),
+          this.first(attr.team_score, attr.score, ""),
+          this.first(attr.opponent_score, ""),
+          Boolean(attr.team_winner),
+          Boolean(attr.opponent_winner)
+        ];
       })
     });
   }
@@ -783,6 +814,9 @@ class WorldCupDashboardCard extends HTMLElement {
       .bracket {
         overflow: auto;
         padding: 14px;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        touch-action: pan-x pan-y;
       }
       .bracket-board {
         display: grid;
