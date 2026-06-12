@@ -87,6 +87,7 @@ class WorldCupDashboardCard extends HTMLElement {
       `;
       this.bindEvents();
       this.restoreScrollState(scrollState);
+      this._hasRendered = true;
       return;
     }
 
@@ -131,16 +132,22 @@ class WorldCupDashboardCard extends HTMLElement {
     const bracket = this.shadowRoot.querySelector(".bracket");
     return {
       bracketLeft: bracket ? bracket.scrollLeft : 0,
-      bracketTop: bracket ? bracket.scrollTop : 0
+      bracketTop: bracket ? bracket.scrollTop : 0,
+      pageX: window.scrollX || window.pageXOffset || 0,
+      pageY: window.scrollY || window.pageYOffset || 0
     };
   }
 
   restoreScrollState(scrollState = {}) {
     const restore = () => {
       const bracket = this.shadowRoot?.querySelector(".bracket");
-      if (!bracket) return;
-      bracket.scrollLeft = scrollState.bracketLeft || 0;
-      bracket.scrollTop = scrollState.bracketTop || 0;
+      if (bracket) {
+        bracket.scrollLeft = scrollState.bracketLeft || 0;
+        bracket.scrollTop = scrollState.bracketTop || 0;
+      }
+      if (this.config?.view_mode === "bracket" && Number.isFinite(scrollState.pageY)) {
+        window.scrollTo(scrollState.pageX || 0, scrollState.pageY || 0);
+      }
     };
     restore();
     queueMicrotask(restore);

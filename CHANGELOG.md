@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.13
+
+- Fixed desktop bracket page scroll jumps by marking bracket renders complete and preserving page scroll during bracket refreshes.
+
 ## 0.1.12
 
 - Added fresh release screenshots for the native overview card and bracket results/qualification-watch page.
