@@ -24,6 +24,14 @@ Bracket board:
 
 ![Bracket board](docs/images/world-cup-bracket-board.png)
 
+Latest overview with team detail and event controls:
+
+![Latest World Cup overview](docs/images/world-cup-v011-overview.png)
+
+Latest bracket with stored results and qualification watch:
+
+![Latest World Cup bracket results](docs/images/world-cup-v011-bracket.png)
+
 ## What It Does
 
 - Uses your existing TeamTracker sensors.

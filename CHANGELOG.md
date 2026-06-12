@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.12
+
+- Added fresh release screenshots for the native overview card and bracket results/qualification-watch page.
+
 ## 0.1.11
 
 - Added a qualification watch panel that summarizes stored results and real published knockout matchups without using fake advancement.
