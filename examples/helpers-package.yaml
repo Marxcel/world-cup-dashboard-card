@@ -32,6 +32,12 @@ input_boolean:
   world_cup_favorite_team_alerts_only:
     name: World Cup favorite-team alerts only
     icon: mdi:star-outline
+  world_cup_quiet_mode:
+    name: World Cup quiet mode
+    icon: mdi:bell-sleep-outline
+  world_cup_focus_mode:
+    name: World Cup focus mode
+    icon: mdi:crosshairs-gps
   world_cup_match_day_mode:
     name: World Cup match day mode
     icon: mdi:trophy-outline
@@ -82,6 +88,11 @@ input_select:
     icon: mdi:scoreboard-outline
     options:
       - none|No completed results yet
+  world_cup_event_history:
+    name: World Cup event history
+    icon: mdi:timeline-text-outline
+    options:
+      - none|No stored events yet
   world_cup_favorite_team:
     name: World Cup favorite team
     icon: mdi:soccer

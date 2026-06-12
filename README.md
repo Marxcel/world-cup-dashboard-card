@@ -38,13 +38,20 @@ Latest bracket with stored results and qualification watch:
 - Works with a few teams or all 48 confirmed World Cup 2026 teams.
 - Keeps user-specific devices configurable through helpers.
 - Shows live matches with scores, flags, clock, venue, TV, and parsed scorer/card/penalty/foul events when TeamTracker exposes them.
-- Adds a team detail panel for the favorite/current match with latest events and recent stored result.
+- Adds team/result/bracket drill-down details with match context, recent result, venue, TV, and ESPN links when available.
+- Adds a favorite-team focus mode for a selected team's match path, score, kickoff, venue, TV, and latest result.
 - Shows starting-soon matches and completed matches for today.
 - Shows scores only when TeamTracker has real match data.
+- Shows a data health panel for missing/stale TeamTracker sensors, latest update, live matches, stored results, and helper status.
+- Shows a result/event history log built from stored results, optional event history helpers, and TeamTracker last-play text.
 - Shows group-stage completed results above the bracket when `completed_results_helper` is configured.
 - Shows a qualification watch panel for stored results and published knockout matchups without pretending group-stage winners have advanced.
+- Shows a lightweight group pulse for tracked points impact without replacing real group standings.
 - Leaves knockout slots blank until TeamTracker/ESPN publishes real knockout matchups.
 - Provides optional event-type alert controls for goals, cards, penalties, fouls/handballs, and favorite-team-only mode.
+- Provides a notification manager with quiet mode, focus mode, active alert summary, and team phone routing.
+- Provides admin buttons for refreshing tracked sensors, muting alerts, clearing stored results, and testing notification routes.
+- Adds bracket jump links, sticky round headers, and a compact/expanded bracket view toggle.
 - Supports optional per-team phone routing helpers for notification automations.
 - Uses a stacked mobile bracket layout on smaller screens.
 - Provides optional test buttons for selected speaker/TTS and phone notification helpers.
@@ -129,6 +136,9 @@ announcement_player_helper: input_select.world_cup_announcement_player
 tts_entity_helper: input_select.world_cup_tts_entity
 notification_service_helper: input_select.world_cup_notification_service
 completed_results_helper: input_select.world_cup_completed_results
+quiet_mode_helper: input_boolean.world_cup_quiet_mode
+focus_mode_helper: input_boolean.world_cup_focus_mode
+event_history_helper: input_select.world_cup_event_history
 event_alert_helpers:
   goals: input_boolean.world_cup_goal_alerts_enabled
   key_events: input_boolean.world_cup_key_event_alerts_enabled
@@ -187,6 +197,8 @@ Group-stage results do not fill knockout bracket slots. If you configure `comple
 
 The qualification watch panel uses completed results and real knockout TeamTracker data to show who needs attention. It is not a full group table and it does not mark a team as qualified until a real knockout matchup is available.
 
+The group pulse panel is intentionally lighter than full standings. It only summarizes point impact from stored results visible to the card.
+
 ## Optional Helpers
 
 Copy `examples/helpers-package.yaml` into a Home Assistant package, or create the helpers manually.
@@ -198,6 +210,7 @@ The card can use these helpers:
 - `input_select.world_cup_tts_entity`
 - `input_select.world_cup_notification_service`
 - `input_select.world_cup_completed_results`
+- `input_select.world_cup_event_history`
 - `input_boolean.world_cup_kickoff_alerts_enabled`
 - `input_boolean.world_cup_match_start_alerts_enabled`
 - `input_boolean.world_cup_final_score_alerts_enabled`
@@ -209,6 +222,8 @@ The card can use these helpers:
 - `input_boolean.world_cup_red_card_alerts_enabled`
 - `input_boolean.world_cup_yellow_card_alerts_enabled`
 - `input_boolean.world_cup_favorite_team_alerts_only`
+- `input_boolean.world_cup_quiet_mode`
+- `input_boolean.world_cup_focus_mode`
 - `input_number.world_cup_reminder_minutes`
 
 Optional per-team phone routing helpers can point a team abbreviation to a notification service selector. Example:

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.14
+
+- Added team, result, and bracket-slot drill-down detail panels.
+- Added notification manager with quiet mode, focus mode, active alert summary, and team phone routing.
+- Added result/event history log, data health panel, admin tools, and favorite-team focus mode.
+- Added bracket jump links, sticky round headers, and compact/expanded bracket toggle.
+- Added lightweight group pulse for tracked points impact without replacing real standings.
+- Updated helper examples for quiet mode, focus mode, and optional event history storage.
+
 ## 0.1.13
 
 - Fixed desktop bracket page scroll jumps by marking bracket renders complete and preserving page scroll during bracket refreshes.

@@ -14,6 +14,9 @@ views:
         tts_entity_helper: input_select.world_cup_tts_entity
         notification_service_helper: input_select.world_cup_notification_service
         completed_results_helper: input_select.world_cup_completed_results
+        quiet_mode_helper: input_boolean.world_cup_quiet_mode
+        focus_mode_helper: input_boolean.world_cup_focus_mode
+        event_history_helper: input_select.world_cup_event_history
         event_alert_helpers:
           goals: input_boolean.world_cup_goal_alerts_enabled
           key_events: input_boolean.world_cup_key_event_alerts_enabled
@@ -82,6 +85,7 @@ views:
         title: World Cup 2026 Bracket
         view_mode: bracket
         completed_results_helper: input_select.world_cup_completed_results
+        event_history_helper: input_select.world_cup_event_history
         team_sensors:
           - sensor.can
           - sensor.mex
