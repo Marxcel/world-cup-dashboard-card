@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.11
+
+- Added a qualification watch panel that summarizes stored results and real published knockout matchups without using fake advancement.
+- Added a favorite/current team detail panel with score, status, recent stored result, and latest parsed events.
+- Added icons to parsed goal, card, penalty, foul, handball, and timeline events.
+- Added optional event alert helper controls for goals, key events, penalties, red cards, yellow cards, and favorite-team-only mode.
+- Added optional per-team phone routing helper controls for notification automations.
+- Improved the bracket layout on phones by stacking rounds instead of requiring a wide horizontal board.
+- Updated helper and dashboard examples for the new alert and routing controls.
+
 ## 0.1.10
 
 - Added native Live Now, Starting Soon, and Completed Today sections to overview mode.

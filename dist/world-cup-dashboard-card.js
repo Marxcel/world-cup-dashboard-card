@@ -6,6 +6,14 @@ class WorldCupDashboardCard extends HTMLElement {
       team_sensors: ["sensor.usa", "sensor.mex", "sensor.arg"],
       favorite_team_helper: "input_select.world_cup_favorite_team",
       completed_results_helper: "input_select.world_cup_completed_results",
+      event_alert_helpers: {
+        goals: "input_boolean.world_cup_goal_alerts_enabled",
+        key_events: "input_boolean.world_cup_key_event_alerts_enabled",
+        penalties: "input_boolean.world_cup_penalty_alerts_enabled",
+        red_cards: "input_boolean.world_cup_red_card_alerts_enabled",
+        yellow_cards: "input_boolean.world_cup_yellow_card_alerts_enabled",
+        favorite_only: "input_boolean.world_cup_favorite_team_alerts_only"
+      },
       show_controls: true
     };
   }
@@ -19,6 +27,15 @@ class WorldCupDashboardCard extends HTMLElement {
       show_controls: true,
       view_mode: "overview",
       completed_results_helper: "input_select.world_cup_completed_results",
+      event_alert_helpers: {
+        goals: "input_boolean.world_cup_goal_alerts_enabled",
+        key_events: "input_boolean.world_cup_key_event_alerts_enabled",
+        penalties: "input_boolean.world_cup_penalty_alerts_enabled",
+        red_cards: "input_boolean.world_cup_red_card_alerts_enabled",
+        yellow_cards: "input_boolean.world_cup_yellow_card_alerts_enabled",
+        favorite_only: "input_boolean.world_cup_favorite_team_alerts_only"
+      },
+      team_notification_helpers: {},
       ...config
     };
     this._hasRendered = false;
@@ -54,6 +71,7 @@ class WorldCupDashboardCard extends HTMLElement {
     const liveMatches = this.getLiveMatches(teams);
     const startingSoon = this.getStartingSoonMatches(teams);
     const completedToday = this.getCompletedTodayMatches(teams);
+    const completedResults = this.getCompletedResults(teams);
 
     if (this.config.view_mode === "bracket") {
       this.shadowRoot.innerHTML = `
@@ -62,6 +80,7 @@ class WorldCupDashboardCard extends HTMLElement {
           <div class="wc-wrap bracket-page">
             ${this.renderHero()}
             ${this.renderCompletedResults(teams)}
+            ${this.renderQualificationTracker(teams, knockout, completedResults)}
             ${this.renderKnockout(knockout)}
           </div>
         </ha-card>
@@ -87,6 +106,7 @@ class WorldCupDashboardCard extends HTMLElement {
             </div>
             <div class="column">
               ${this.renderTrackedTeams(teams, favorite)}
+              ${this.renderTeamDetail(favoriteMatch, completedResults)}
               ${this.renderFavoritePanel(favoriteMatch)}
               ${this.renderOpeningMatches()}
             </div>
@@ -136,6 +156,8 @@ class WorldCupDashboardCard extends HTMLElement {
       this.config.tts_entity_helper,
       this.config.notification_service_helper,
       this.config.completed_results_helper,
+      ...Object.values(this.config.event_alert_helpers || {}),
+      ...Object.values(this.config.team_notification_helpers || {}),
       "input_boolean.world_cup_kickoff_alerts_enabled",
       "input_boolean.world_cup_match_start_alerts_enabled",
       "input_boolean.world_cup_final_score_alerts_enabled",
@@ -445,10 +467,12 @@ class WorldCupDashboardCard extends HTMLElement {
         ${this.renderToggleState("Final-score alerts", "input_boolean.world_cup_final_score_alerts_enabled")}
         ${this.renderToggleState("Speaker announcements", "input_boolean.world_cup_speaker_announcements_enabled")}
         ${this.renderToggleState("Phone notifications", "input_boolean.world_cup_phone_notifications_enabled")}
+        ${this.renderEventAlertControls()}
         ${this.renderHelperValue("Reminder", "input_number.world_cup_reminder_minutes", "min")}
         ${this.renderSelect("Speaker", this.config.announcement_player_helper)}
         ${this.renderSelect("TTS", this.config.tts_entity_helper)}
         ${this.renderSelect("Phone", this.config.notification_service_helper)}
+        ${this.renderTeamNotificationRoutes()}
         <div class="button-row">
           <button data-action="test-speaker">Test Speaker</button>
           <button data-action="stop-speaker">Stop Speaker</button>
@@ -525,6 +549,60 @@ class WorldCupDashboardCard extends HTMLElement {
     `;
   }
 
+  renderTeamDetail(match, completedResults = []) {
+    if (!match) return "";
+    const result = completedResults.find((item) => item.homeAbbr === match.abbr || item.awayAbbr === match.abbr);
+    const resultText = result
+      ? `${result.homeAbbr} ${result.homeScore} - ${result.awayScore} ${result.awayAbbr}`
+      : "No completed result stored yet";
+    const eventSummary = this.parseMatchEvents(match.lastPlay).slice(-3);
+    return `
+      <section class="panel team-detail">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Team Detail</p>
+            <h2>${this.escape(match.name)}</h2>
+          </div>
+          ${this.renderTeamBadge(match.logo, match.abbr, match.winner)}
+        </div>
+        <div class="facts">
+          <span>Current match: ${this.escape(match.name)} vs ${this.escape(match.opponent)}</span>
+          <span>Status: ${this.escape(match.status || "Unknown")}</span>
+          <span>Score: ${this.renderScore(match)}</span>
+          <span>Latest result: ${this.escape(resultText)}</span>
+          <span>Next kickoff: ${this.formatDate(match.date) || "TBD"}</span>
+        </div>
+        ${eventSummary.length ? `
+          <div class="event-list compact-events">
+            <h3>Latest Events</h3>
+            ${eventSummary.map((event) => this.renderEventRow(event)).join("")}
+          </div>
+        ` : ""}
+      </section>
+    `;
+  }
+
+  renderEventAlertControls() {
+    const helpers = this.config.event_alert_helpers || {};
+    const rows = [
+      ["Goal alerts", helpers.goals],
+      ["Key match events", helpers.key_events],
+      ["Penalty alerts", helpers.penalties],
+      ["Red-card alerts", helpers.red_cards],
+      ["Yellow-card alerts", helpers.yellow_cards],
+      ["Favorite-team only", helpers.favorite_only]
+    ].map(([label, entityId]) => this.renderToggleState(label, entityId)).join("");
+    return rows ? `<div class="control-group"><h3>Event alerts</h3>${rows}</div>` : "";
+  }
+
+  renderTeamNotificationRoutes() {
+    const routes = this.config.team_notification_helpers || {};
+    const rows = Object.entries(routes)
+      .map(([abbr, entityId]) => this.renderSelect(`${abbr} phone`, entityId))
+      .join("");
+    return rows ? `<div class="control-group"><h3>Team phone routing</h3>${rows}</div>` : "";
+  }
+
   renderLiveMatches(matches) {
     if (!matches.length) return "";
     return `
@@ -576,15 +654,29 @@ class WorldCupDashboardCard extends HTMLElement {
     return `
       <div class="event-list">
         <h3>Match Events</h3>
-        ${events.length ? events.map((event) => `
-          <div class="event-row">
-            <span>${this.escape(event.minute)}</span>
-            <strong>${this.escape(event.type)}</strong>
-            <em>${this.escape(event.detail)}</em>
-          </div>
-        `).join("") : `<p class="muted">No scorer or foul/card details reported yet.</p>`}
+        ${events.length ? events.map((event) => this.renderEventRow(event)).join("") : `<p class="muted">No scorer or foul/card details reported yet.</p>`}
       </div>
     `;
+  }
+
+  renderEventRow(event) {
+    return `
+      <div class="event-row">
+        <span>${this.escape(event.minute)}</span>
+        <strong><ha-icon icon="${this.escape(this.eventIcon(event.type))}"></ha-icon>${this.escape(event.type)}</strong>
+        <em>${this.escape(event.detail)}</em>
+      </div>
+    `;
+  }
+
+  eventIcon(type) {
+    const text = String(type || "").toLowerCase();
+    if (text.includes("goal")) return "mdi:soccer";
+    if (text.includes("red")) return "mdi:card";
+    if (text.includes("yellow")) return "mdi:card-outline";
+    if (text.includes("penalty")) return "mdi:whistle";
+    if (text.includes("foul") || text.includes("handball")) return "mdi:alert-circle-outline";
+    return "mdi:timeline-text-outline";
   }
 
   parseMatchEvents(lastPlay) {
@@ -693,6 +785,71 @@ class WorldCupDashboardCard extends HTMLElement {
           ${this.renderBracketColumn("Round of 32", byRound.r32.slice(8, 16), 8, "r32")}
         </div>
         <p class="muted">The bracket updates from TeamTracker when real knockout matchups are available. It does not use prediction placeholders.</p>
+      </section>
+    `;
+  }
+
+  renderQualificationTracker(teams, knockout, completedResults) {
+    const logos = this.getLogoMap(teams);
+    const watch = new Map();
+    const addWatch = (abbr, name, logo, status, detail, priority) => {
+      if (!abbr) return;
+      const key = String(abbr).toUpperCase();
+      const existing = watch.get(key);
+      if (existing && existing.priority <= priority) return;
+      watch.set(key, { abbr: key, name: name || key, logo: logo || logos[key] || "", status, detail, priority });
+    };
+
+    knockout.forEach((match) => {
+      addWatch(match.abbr, match.name, match.logo, "Knockout matchup published", `${match.abbr} vs ${match.opponentAbbr || match.opponent}`, 1);
+      addWatch(match.opponentAbbr, match.opponent, match.opponentLogo, "Knockout matchup published", `${match.opponentAbbr || match.opponent} vs ${match.abbr}`, 1);
+    });
+
+    completedResults.slice(0, 12).forEach((result) => {
+      const score = `${result.homeAbbr} ${result.homeScore} - ${result.awayScore} ${result.awayAbbr}`;
+      const isDraw = result.winner === "DRAW";
+      addWatch(
+        result.homeAbbr,
+        result.homeName,
+        result.homeLogo,
+        isDraw ? "Draw recorded" : result.winner === result.homeAbbr ? "Group win recorded" : "Group result recorded",
+        `${score}; qualification pending`,
+        3
+      );
+      addWatch(
+        result.awayAbbr,
+        result.awayName,
+        result.awayLogo,
+        isDraw ? "Draw recorded" : result.winner === result.awayAbbr ? "Group win recorded" : "Group result recorded",
+        `${score}; qualification pending`,
+        3
+      );
+    });
+
+    const rows = [...watch.values()].sort((a, b) => a.priority - b.priority || a.abbr.localeCompare(b.abbr)).slice(0, 8);
+    if (!rows.length) return "";
+    return `
+      <section class="panel qualification-watch color-blue">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Qualification Watch</p>
+            <h2>Advancement Status</h2>
+          </div>
+          <span>${rows.length} teams</span>
+        </div>
+        <div class="qualification-grid">
+          ${rows.map((team) => `
+            <article class="qualification-card">
+              ${this.renderTeamBadge(team.logo, team.abbr, team.status.includes("Knockout"))}
+              <div>
+                <strong>${this.escape(team.name)}</strong>
+                <span>${this.escape(team.status)}</span>
+                <em>${this.escape(team.detail)}</em>
+              </div>
+            </article>
+          `).join("")}
+        </div>
+        <p class="muted">Group results show the teams to watch. Knockout slots still fill only from published knockout matchups.</p>
       </section>
     `;
   }
@@ -1169,6 +1326,28 @@ class WorldCupDashboardCard extends HTMLElement {
         color: var(--wc-muted);
         font-style: normal;
       }
+      .event-row strong {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .event-row ha-icon {
+        width: 16px;
+        height: 16px;
+        color: var(--wc-gold);
+      }
+      .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding-top: 10px;
+        border-top: 1px solid var(--wc-line);
+      }
+      .control-group h3 {
+        margin: 0;
+        color: var(--wc-gold);
+        font-size: 14px;
+      }
       .compact-results {
         display: flex;
         flex-direction: column;
@@ -1259,6 +1438,42 @@ class WorldCupDashboardCard extends HTMLElement {
         color: var(--wc-muted);
         background: rgba(0,0,0,0.16);
         font-size: 12px;
+      }
+      .qualification-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+      }
+      .qualification-card {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        align-items: center;
+        min-width: 0;
+        padding: 11px;
+        border: 1px solid var(--wc-line);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.08);
+      }
+      .qualification-card div {
+        min-width: 0;
+      }
+      .qualification-card strong,
+      .qualification-card span,
+      .qualification-card em {
+        display: block;
+      }
+      .qualification-card span {
+        color: var(--wc-gold);
+        font-size: 12px;
+        font-weight: 900;
+        margin-top: 2px;
+      }
+      .qualification-card em {
+        color: var(--wc-muted);
+        font-size: 12px;
+        font-style: normal;
+        margin-top: 3px;
       }
       .bracket {
         overflow-x: auto;
@@ -1406,6 +1621,26 @@ class WorldCupDashboardCard extends HTMLElement {
         }
         .event-row em {
           grid-column: 2;
+        }
+        .bracket {
+          overflow-x: visible;
+          padding: 8px;
+        }
+        .bracket-board {
+          grid-template-columns: 1fr;
+          gap: 12px;
+          min-width: 0;
+        }
+        .bracket-col,
+        .bracket-final,
+        .bracket-col.r32,
+        .bracket-col.r16,
+        .bracket-col.qf,
+        .bracket-col.sf {
+          grid-template-rows: auto;
+        }
+        .bracket-slot {
+          min-height: 68px;
         }
       }
     `;

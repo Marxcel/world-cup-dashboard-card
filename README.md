@@ -30,10 +30,15 @@ Bracket board:
 - Works with a few teams or all 48 confirmed World Cup 2026 teams.
 - Keeps user-specific devices configurable through helpers.
 - Shows live matches with scores, flags, clock, venue, TV, and parsed scorer/card/penalty/foul events when TeamTracker exposes them.
+- Adds a team detail panel for the favorite/current match with latest events and recent stored result.
 - Shows starting-soon matches and completed matches for today.
 - Shows scores only when TeamTracker has real match data.
 - Shows group-stage completed results above the bracket when `completed_results_helper` is configured.
+- Shows a qualification watch panel for stored results and published knockout matchups without pretending group-stage winners have advanced.
 - Leaves knockout slots blank until TeamTracker/ESPN publishes real knockout matchups.
+- Provides optional event-type alert controls for goals, cards, penalties, fouls/handballs, and favorite-team-only mode.
+- Supports optional per-team phone routing helpers for notification automations.
+- Uses a stacked mobile bracket layout on smaller screens.
 - Provides optional test buttons for selected speaker/TTS and phone notification helpers.
 - Includes an overview mode and a bracket-only mode.
 
@@ -116,6 +121,16 @@ announcement_player_helper: input_select.world_cup_announcement_player
 tts_entity_helper: input_select.world_cup_tts_entity
 notification_service_helper: input_select.world_cup_notification_service
 completed_results_helper: input_select.world_cup_completed_results
+event_alert_helpers:
+  goals: input_boolean.world_cup_goal_alerts_enabled
+  key_events: input_boolean.world_cup_key_event_alerts_enabled
+  penalties: input_boolean.world_cup_penalty_alerts_enabled
+  red_cards: input_boolean.world_cup_red_card_alerts_enabled
+  yellow_cards: input_boolean.world_cup_yellow_card_alerts_enabled
+  favorite_only: input_boolean.world_cup_favorite_team_alerts_only
+team_notification_helpers:
+  MEX: input_select.world_cup_mexico_notification_service
+  USA: input_select.world_cup_usa_notification_service
 show_controls: true
 ```
 
@@ -162,6 +177,8 @@ The bracket tab auto-fills only when TeamTracker/ESPN publishes real knockout ma
 
 Group-stage results do not fill knockout bracket slots. If you configure `completed_results_helper`, completed group-stage matches appear above the bracket as durable results while the knockout bracket waits for real knockout matchups.
 
+The qualification watch panel uses completed results and real knockout TeamTracker data to show who needs attention. It is not a full group table and it does not mark a team as qualified until a real knockout matchup is available.
+
 ## Optional Helpers
 
 Copy `examples/helpers-package.yaml` into a Home Assistant package, or create the helpers manually.
@@ -178,7 +195,21 @@ The card can use these helpers:
 - `input_boolean.world_cup_final_score_alerts_enabled`
 - `input_boolean.world_cup_speaker_announcements_enabled`
 - `input_boolean.world_cup_phone_notifications_enabled`
+- `input_boolean.world_cup_goal_alerts_enabled`
+- `input_boolean.world_cup_key_event_alerts_enabled`
+- `input_boolean.world_cup_penalty_alerts_enabled`
+- `input_boolean.world_cup_red_card_alerts_enabled`
+- `input_boolean.world_cup_yellow_card_alerts_enabled`
+- `input_boolean.world_cup_favorite_team_alerts_only`
 - `input_number.world_cup_reminder_minutes`
+
+Optional per-team phone routing helpers can point a team abbreviation to a notification service selector. Example:
+
+```yaml
+team_notification_helpers:
+  MEX: input_select.world_cup_mexico_notification_service
+  USA: input_select.world_cup_usa_notification_service
+```
 
 ## Blueprints
 

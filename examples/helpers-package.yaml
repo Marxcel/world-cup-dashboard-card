@@ -14,6 +14,24 @@ input_boolean:
   world_cup_phone_notifications_enabled:
     name: World Cup phone notifications
     icon: mdi:cellphone-message
+  world_cup_goal_alerts_enabled:
+    name: World Cup goal alerts
+    icon: mdi:soccer
+  world_cup_key_event_alerts_enabled:
+    name: World Cup key event alerts
+    icon: mdi:timeline-alert-outline
+  world_cup_penalty_alerts_enabled:
+    name: World Cup penalty alerts
+    icon: mdi:whistle
+  world_cup_red_card_alerts_enabled:
+    name: World Cup red-card alerts
+    icon: mdi:card
+  world_cup_yellow_card_alerts_enabled:
+    name: World Cup yellow-card alerts
+    icon: mdi:card-outline
+  world_cup_favorite_team_alerts_only:
+    name: World Cup favorite-team alerts only
+    icon: mdi:star-outline
   world_cup_match_day_mode:
     name: World Cup match day mode
     icon: mdi:trophy-outline
@@ -43,6 +61,18 @@ input_select:
       - tts.google_translate_en_com
   world_cup_notification_service:
     name: World Cup notification service
+    icon: mdi:bell-badge-outline
+    options:
+      - notify.mobile_app_your_phone
+      - notify.notify
+  world_cup_mexico_notification_service:
+    name: World Cup Mexico notification service
+    icon: mdi:bell-badge-outline
+    options:
+      - notify.mobile_app_your_phone
+      - notify.notify
+  world_cup_usa_notification_service:
+    name: World Cup USA notification service
     icon: mdi:bell-badge-outline
     options:
       - notify.mobile_app_your_phone

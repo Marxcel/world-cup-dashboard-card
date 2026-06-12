@@ -9,4 +9,14 @@ announcement_player_helper: input_select.world_cup_announcement_player
 tts_entity_helper: input_select.world_cup_tts_entity
 notification_service_helper: input_select.world_cup_notification_service
 completed_results_helper: input_select.world_cup_completed_results
+event_alert_helpers:
+  goals: input_boolean.world_cup_goal_alerts_enabled
+  key_events: input_boolean.world_cup_key_event_alerts_enabled
+  penalties: input_boolean.world_cup_penalty_alerts_enabled
+  red_cards: input_boolean.world_cup_red_card_alerts_enabled
+  yellow_cards: input_boolean.world_cup_yellow_card_alerts_enabled
+  favorite_only: input_boolean.world_cup_favorite_team_alerts_only
+team_notification_helpers:
+  MEX: input_select.world_cup_mexico_notification_service
+  USA: input_select.world_cup_usa_notification_service
 show_controls: true
