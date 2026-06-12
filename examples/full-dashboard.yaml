@@ -13,6 +13,7 @@ views:
         announcement_player_helper: input_select.world_cup_announcement_player
         tts_entity_helper: input_select.world_cup_tts_entity
         notification_service_helper: input_select.world_cup_notification_service
+        completed_results_helper: input_select.world_cup_completed_results
         team_sensors:
           - sensor.can
           - sensor.mex
@@ -70,6 +71,7 @@ views:
       - type: custom:world-cup-dashboard-card
         title: World Cup 2026 Bracket
         view_mode: bracket
+        completed_results_helper: input_select.world_cup_completed_results
         team_sensors:
           - sensor.can
           - sensor.mex

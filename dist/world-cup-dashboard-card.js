@@ -5,6 +5,7 @@ class WorldCupDashboardCard extends HTMLElement {
       title: "World Cup 2026",
       team_sensors: ["sensor.usa", "sensor.mex", "sensor.arg"],
       favorite_team_helper: "input_select.world_cup_favorite_team",
+      completed_results_helper: "input_select.world_cup_completed_results",
       show_controls: true
     };
   }
@@ -17,6 +18,7 @@ class WorldCupDashboardCard extends HTMLElement {
       title: "World Cup 2026",
       show_controls: true,
       view_mode: "overview",
+      completed_results_helper: "input_select.world_cup_completed_results",
       ...config
     };
     this._hasRendered = false;
@@ -49,6 +51,9 @@ class WorldCupDashboardCard extends HTMLElement {
     const nextSeven = this.getMatchesInWindow(teams, 0, 7);
     const nextMatches = this.uniqueMatches(teams).filter((match) => match.date && match.date >= new Date()).slice(0, 8);
     const knockout = this.getKnockoutMatches(teams);
+    const liveMatches = this.getLiveMatches(teams);
+    const startingSoon = this.getStartingSoonMatches(teams);
+    const completedToday = this.getCompletedTodayMatches(teams);
 
     if (this.config.view_mode === "bracket") {
       this.shadowRoot.innerHTML = `
@@ -56,6 +61,7 @@ class WorldCupDashboardCard extends HTMLElement {
         <ha-card>
           <div class="wc-wrap bracket-page">
             ${this.renderHero()}
+            ${this.renderCompletedResults(teams)}
             ${this.renderKnockout(knockout)}
           </div>
         </ha-card>
@@ -70,6 +76,9 @@ class WorldCupDashboardCard extends HTMLElement {
       <ha-card>
         <div class="wc-wrap">
           ${this.renderHero()}
+          ${this.renderLiveMatches(liveMatches)}
+          ${this.renderStartingSoon(startingSoon)}
+          ${this.renderCompletedToday(completedToday)}
           <section class="grid">
             <div class="column">
               ${this.renderFeatured(favoriteMatch)}
@@ -126,6 +135,7 @@ class WorldCupDashboardCard extends HTMLElement {
       this.config.announcement_player_helper,
       this.config.tts_entity_helper,
       this.config.notification_service_helper,
+      this.config.completed_results_helper,
       "input_boolean.world_cup_kickoff_alerts_enabled",
       "input_boolean.world_cup_match_start_alerts_enabled",
       "input_boolean.world_cup_final_score_alerts_enabled",
@@ -149,9 +159,11 @@ class WorldCupDashboardCard extends HTMLElement {
   getBracketRenderSignature() {
     const teamSensors = this.config.team_sensors || [];
     const knockoutWords = ["round of 32", "round of 16", "quarter", "semi", "final"];
+    const completedResults = this.config.completed_results_helper ? this._hass.states[this.config.completed_results_helper] : null;
     return JSON.stringify({
       title: this.config.title,
       mode: this.config.view_mode,
+      completedResults: completedResults ? [completedResults.state, completedResults.attributes?.options || []] : null,
       teams: teamSensors.map((entityId) => {
         const state = this._hass.states[entityId];
         if (!state) return [entityId, null];
@@ -170,7 +182,9 @@ class WorldCupDashboardCard extends HTMLElement {
           this.first(attr.team_score, attr.score, ""),
           this.first(attr.opponent_score, ""),
           Boolean(attr.team_winner),
-          Boolean(attr.opponent_winner)
+          Boolean(attr.opponent_winner),
+          this.first(attr.clock, attr.status, state.state, ""),
+          this.first(attr.last_play, "")
         ];
       })
     });
@@ -188,7 +202,8 @@ class WorldCupDashboardCard extends HTMLElement {
         return {
           entityId,
           state: state.state,
-          status: this.first(attr.status, attr.event_status, state.state, ""),
+          status: this.first(attr.clock, attr.status, attr.event_status, state.state, ""),
+          eventId: this.first(attr.event_id, attr.id, attr.uid, ""),
           abbr,
           name: this.first(attr.team_long_name, attr.team_name, attr.team, abbr),
           logo: this.first(attr.team_logo, attr.team_logo_url, attr.entity_picture, ""),
@@ -199,10 +214,14 @@ class WorldCupDashboardCard extends HTMLElement {
           opponentLogo: this.first(attr.opponent_logo, attr.opponent_logo_url, ""),
           opponentScore: this.first(attr.opponent_score, ""),
           opponentWinner: Boolean(attr.opponent_winner),
+          homeAway: this.first(attr.team_homeaway, ""),
           date,
           venue: this.first(attr.venue, attr.location, ""),
           tv: this.first(attr.tv_network, attr.broadcast, attr.network, ""),
           round: this.first(attr.round, attr.event_name, attr.league, ""),
+          season: this.first(attr.season, ""),
+          clock: this.first(attr.clock, ""),
+          lastPlay: this.first(attr.last_play, ""),
           url: this.first(attr.event_url, attr.url, "")
         };
       })
@@ -215,7 +234,7 @@ class WorldCupDashboardCard extends HTMLElement {
       .filter((team) => team.date)
       .sort((a, b) => a.date - b.date)
       .filter((team) => {
-        const key = [team.abbr, team.opponentAbbr, team.date.toISOString()].sort().join("|");
+        const key = team.eventId || [team.abbr, team.opponentAbbr, team.date.toISOString()].sort().join("|");
         if (seen.has(key)) return false;
         seen.add(key);
         return true;
@@ -238,6 +257,94 @@ class WorldCupDashboardCard extends HTMLElement {
       const round = String(team.round || "").toLowerCase();
       return knockoutWords.some((word) => round.includes(word));
     });
+  }
+
+  getLiveMatches(teams) {
+    return this.uniqueMatches(teams).filter((team) => ["IN", "LIVE"].includes(String(team.state).toUpperCase()));
+  }
+
+  getStartingSoonMatches(teams) {
+    const now = new Date();
+    const soon = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+    return this.uniqueMatches(teams).filter((team) => team.date && team.state === "PRE" && team.date >= now && team.date <= soon).slice(0, 6);
+  }
+
+  getCompletedTodayMatches(teams) {
+    const today = new Date().toDateString();
+    return this.uniqueMatches(teams).filter((team) => team.state === "POST" && team.date && team.date.toDateString() === today);
+  }
+
+  getCompletedResults(teams) {
+    const logos = this.getLogoMap(teams);
+    const stored = this.getStoredResultLines().map((line) => this.parseStoredResult(line, logos)).filter(Boolean);
+    const liveCompleted = this.uniqueMatches(teams)
+      .filter((team) => team.state === "POST")
+      .map((team) => this.matchToResult(team))
+      .filter(Boolean);
+    const byEvent = new Map();
+    [...stored, ...liveCompleted].forEach((result) => {
+      if (!result.eventId) return;
+      byEvent.set(result.eventId, result);
+    });
+    return [...byEvent.values()].sort((a, b) => (b.date?.getTime?.() || 0) - (a.date?.getTime?.() || 0));
+  }
+
+  getStoredResultLines() {
+    const helper = this.config.completed_results_helper;
+    if (!helper || !this._hass.states[helper]) return [];
+    return (this._hass.states[helper].attributes?.options || [])
+      .filter((line) => line && !String(line).startsWith("none|"));
+  }
+
+  getLogoMap(teams) {
+    return teams.reduce((map, team) => {
+      if (team.abbr && team.logo) map[team.abbr] = team.logo;
+      if (team.opponentAbbr && team.opponentLogo) map[team.opponentAbbr] = team.opponentLogo;
+      return map;
+    }, {});
+  }
+
+  parseStoredResult(line, logos) {
+    const [eventId, date, homeAbbr, homeName, homeScore, awayAbbr, awayName, awayScore, winner, stage, clock] = String(line).split("|");
+    if (!eventId || !homeAbbr || !awayAbbr) return null;
+    return {
+      eventId,
+      date: this.asDate(date),
+      homeAbbr,
+      homeName,
+      homeScore,
+      awayAbbr,
+      awayName,
+      awayScore,
+      winner,
+      stage,
+      clock,
+      homeLogo: logos[homeAbbr] || "",
+      awayLogo: logos[awayAbbr] || ""
+    };
+  }
+
+  matchToResult(match) {
+    const homeIsTeam = match.homeAway === "home";
+    const homeScore = homeIsTeam ? match.score : match.opponentScore;
+    const awayScore = homeIsTeam ? match.opponentScore : match.score;
+    const homeWinner = homeIsTeam ? match.winner : match.opponentWinner;
+    const awayWinner = homeIsTeam ? match.opponentWinner : match.winner;
+    return {
+      eventId: match.eventId,
+      date: match.date,
+      homeAbbr: homeIsTeam ? match.abbr : match.opponentAbbr,
+      homeName: homeIsTeam ? match.name : match.opponent,
+      homeScore,
+      awayAbbr: homeIsTeam ? match.opponentAbbr : match.abbr,
+      awayName: homeIsTeam ? match.opponent : match.name,
+      awayScore,
+      winner: homeWinner ? (homeIsTeam ? match.abbr : match.opponentAbbr) : awayWinner ? (homeIsTeam ? match.opponentAbbr : match.abbr) : "DRAW",
+      stage: match.season || "group-stage",
+      clock: match.clock || match.status,
+      homeLogo: homeIsTeam ? match.logo : match.opponentLogo,
+      awayLogo: homeIsTeam ? match.opponentLogo : match.logo
+    };
   }
 
   renderHero() {
@@ -418,6 +525,120 @@ class WorldCupDashboardCard extends HTMLElement {
     `;
   }
 
+  renderLiveMatches(matches) {
+    if (!matches.length) return "";
+    return `
+      <section class="panel live-panel">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow live-label">Live Now</p>
+            <h2>Current World Cup Matches</h2>
+          </div>
+          <span>${matches.length} live</span>
+        </div>
+        ${matches.map((match) => this.renderLiveMatch(match)).join("")}
+      </section>
+    `;
+  }
+
+  renderLiveMatch(match) {
+    return `
+      <article class="live-match">
+        <div class="live-scoreline">
+          ${this.renderLiveTeam(match.logo, match.name, match.abbr, match.winner)}
+          <div class="live-score">
+            <strong>${this.escape(match.score || "0")} - ${this.escape(match.opponentScore || "0")}</strong>
+            <span>${this.escape(match.clock || match.status || "Live")}</span>
+          </div>
+          ${this.renderLiveTeam(match.opponentLogo, match.opponent, match.opponentAbbr, match.opponentWinner)}
+        </div>
+        <div class="facts">
+          <span>${this.escape(match.venue || "Venue TBD")}</span>
+          <span>${this.escape(match.tv || "TV TBD")}</span>
+        </div>
+        ${this.renderMatchEvents(match.lastPlay)}
+      </article>
+    `;
+  }
+
+  renderLiveTeam(logo, name, abbr, winner) {
+    return `
+      <div class="live-team ${winner ? "winner-team" : ""}">
+        ${this.renderTeamBadge(logo, abbr, winner)}
+        <strong>${this.escape(name || abbr || "TBD")}</strong>
+        <span>${this.escape(abbr || "")}</span>
+      </div>
+    `;
+  }
+
+  renderMatchEvents(lastPlay) {
+    const events = this.parseMatchEvents(lastPlay);
+    return `
+      <div class="event-list">
+        <h3>Match Events</h3>
+        ${events.length ? events.map((event) => `
+          <div class="event-row">
+            <span>${this.escape(event.minute)}</span>
+            <strong>${this.escape(event.type)}</strong>
+            <em>${this.escape(event.detail)}</em>
+          </div>
+        `).join("") : `<p class="muted">No scorer or foul/card details reported yet.</p>`}
+      </div>
+    `;
+  }
+
+  parseMatchEvents(lastPlay) {
+    const raw = String(lastPlay || "").replace(/\s+/g, " ").replace(/^.*?;\s*/, "").trim();
+    const re = /(\d+\+?'?)\s+(Goal|Yellow Card|Red Card|Penalty|Penalty Kick|Foul|Handball|Own Goal):?\s*(.*?)(?=\s+\d+\+?'?\s+(?:Goal|Yellow Card|Red Card|Penalty|Penalty Kick|Foul|Handball|Own Goal):?|$)/gi;
+    const events = [];
+    let match;
+    while ((match = re.exec(raw)) !== null) {
+      events.push({ minute: match[1], type: match[2], detail: match[3].trim() });
+    }
+    return events.slice(-7);
+  }
+
+  renderStartingSoon(matches) {
+    if (!matches.length) return "";
+    return `
+      <section class="panel compact-results color-blue">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Starting Soon</p>
+            <h2>Next Kickoffs</h2>
+          </div>
+          <span>next 6h</span>
+        </div>
+        ${matches.map((match) => this.renderCompactMatch(match, this.formatTime(match.date))).join("")}
+      </section>
+    `;
+  }
+
+  renderCompletedToday(matches) {
+    if (!matches.length) return "";
+    return `
+      <section class="panel compact-results color-green">
+        <div class="section-head">
+          <h2>Completed Today</h2>
+          <span>${matches.length}</span>
+        </div>
+        ${matches.map((match) => this.renderCompactMatch(match, this.renderScore(match))).join("")}
+      </section>
+    `;
+  }
+
+  renderCompactMatch(match, centerText) {
+    return `
+      <article class="compact-match">
+        ${this.renderTeamBadge(match.logo, match.abbr, match.winner)}
+        <div><strong>${this.escape(match.name)}</strong><span>${this.escape(match.abbr)}</span></div>
+        <strong>${this.escape(centerText || "vs")}</strong>
+        <div><strong>${this.escape(match.opponent)}</strong><span>${this.escape(match.venue || match.tv || "")}</span></div>
+        ${this.renderTeamBadge(match.opponentLogo, match.opponentAbbr, match.opponentWinner)}
+      </article>
+    `;
+  }
+
   renderOpeningMatches() {
     const matches = [
       ["Jun 11", "Group A", "MEX", "RSA", "Mexico City"],
@@ -473,6 +694,50 @@ class WorldCupDashboardCard extends HTMLElement {
         </div>
         <p class="muted">The bracket updates from TeamTracker when real knockout matchups are available. It does not use prediction placeholders.</p>
       </section>
+    `;
+  }
+
+  renderCompletedResults(teams) {
+    const results = this.getCompletedResults(teams);
+    if (!results.length) return "";
+    return `
+      <section class="panel completed-results color-green">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Results</p>
+            <h2>Latest World Cup Results</h2>
+          </div>
+          <span>${results.length} stored</span>
+        </div>
+        ${results.slice(0, 12).map((result) => this.renderResultRow(result)).join("")}
+        <p class="muted">Group-stage results stay here. The knockout bracket below fills only when real knockout matchups are published.</p>
+      </section>
+    `;
+  }
+
+  renderResultRow(result) {
+    const homeWinner = result.winner === result.homeAbbr;
+    const awayWinner = result.winner === result.awayAbbr;
+    return `
+      <article class="result-row">
+        <div class="result-team ${homeWinner ? "winner-team" : ""}">
+          ${this.renderTeamBadge(result.homeLogo, result.homeAbbr, homeWinner)}
+          <div><strong>${this.escape(result.homeName || result.homeAbbr)}</strong><span>${this.escape(result.homeAbbr)}</span></div>
+        </div>
+        <div class="result-score">
+          <strong>${this.escape(result.homeScore)} - ${this.escape(result.awayScore)}</strong>
+          <span>${this.escape(result.clock || "FT")}</span>
+        </div>
+        <div class="result-team away ${awayWinner ? "winner-team" : ""}">
+          <div><strong>${this.escape(result.awayName || result.awayAbbr)}</strong><span>${this.escape(result.awayAbbr)}</span></div>
+          ${this.renderTeamBadge(result.awayLogo, result.awayAbbr, awayWinner)}
+        </div>
+        <div class="result-meta">
+          <span>${this.formatDate(result.date) || "Date TBD"}</span>
+          <span>${this.escape(result.stage || "group-stage")}</span>
+          <span>Winner: ${this.escape(result.winner === "DRAW" ? "Draw" : result.winner)}</span>
+        </div>
+      </article>
     `;
   }
 
@@ -610,6 +875,14 @@ class WorldCupDashboardCard extends HTMLElement {
       weekday: "short",
       month: "short",
       day: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    });
+  }
+
+  formatTime(date) {
+    if (!date) return "";
+    return date.toLocaleTimeString(undefined, {
       hour: "numeric",
       minute: "2-digit"
     });
@@ -811,6 +1084,182 @@ class WorldCupDashboardCard extends HTMLElement {
       .button-row { flex-wrap: wrap; }
       .ok { color: var(--wc-green); }
       .warn { color: var(--wc-red); }
+      .live-panel {
+        border-color: rgba(244, 189, 80, 0.55);
+        background: linear-gradient(135deg, rgba(127, 29, 29, 0.72), rgba(31, 32, 49, 0.94));
+      }
+      .live-label {
+        display: inline-flex;
+        padding: 5px 9px;
+        border-radius: 999px;
+        color: #fff;
+        background: var(--wc-red);
+        margin-bottom: 8px;
+      }
+      .live-match {
+        padding: 14px;
+        margin-top: 12px;
+        border: 1px solid var(--wc-line);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.07);
+      }
+      .live-scoreline {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 14px;
+        align-items: center;
+      }
+      .live-team {
+        text-align: center;
+        min-width: 0;
+      }
+      .live-team .badge {
+        width: 54px;
+        height: 42px;
+        margin-bottom: 8px;
+      }
+      .live-team strong,
+      .live-team span {
+        display: block;
+      }
+      .live-team span {
+        color: var(--wc-muted);
+        font-size: 12px;
+        margin-top: 2px;
+      }
+      .live-score {
+        text-align: center;
+        min-width: 100px;
+      }
+      .live-score strong {
+        display: block;
+        font-size: 34px;
+        line-height: 1;
+      }
+      .live-score span {
+        display: inline-flex;
+        margin-top: 8px;
+        padding: 4px 9px;
+        border-radius: 999px;
+        color: #fff;
+        background: rgba(240, 90, 100, 0.75);
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .event-list {
+        margin-top: 14px;
+      }
+      .event-list h3 {
+        margin: 0 0 8px;
+        color: var(--wc-gold);
+        font-size: 15px;
+      }
+      .event-row {
+        display: grid;
+        grid-template-columns: 44px 100px 1fr;
+        gap: 8px;
+        padding: 7px 0;
+        border-top: 1px solid var(--wc-line);
+      }
+      .event-row span {
+        color: var(--wc-gold);
+        font-weight: 900;
+      }
+      .event-row em {
+        color: var(--wc-muted);
+        font-style: normal;
+      }
+      .compact-results {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .compact-match {
+        display: grid;
+        grid-template-columns: auto 1fr auto 1fr auto;
+        gap: 10px;
+        align-items: center;
+        padding: 10px;
+        border: 1px solid var(--wc-line);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.07);
+      }
+      .compact-match div {
+        min-width: 0;
+      }
+      .compact-match span {
+        display: block;
+        color: var(--wc-muted);
+        font-size: 12px;
+        margin-top: 2px;
+      }
+      .completed-results {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .result-row {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 12px;
+        align-items: center;
+        padding: 14px;
+        border: 1px solid var(--wc-line);
+        border-radius: 10px;
+        background: rgba(255,255,255,0.08);
+      }
+      .result-team {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+      }
+      .result-team.away {
+        justify-content: flex-end;
+        text-align: right;
+      }
+      .result-team strong,
+      .result-team span {
+        display: block;
+      }
+      .result-team span {
+        color: var(--wc-muted);
+        font-size: 12px;
+        margin-top: 2px;
+      }
+      .result-score {
+        text-align: center;
+        min-width: 88px;
+      }
+      .result-score strong {
+        display: block;
+        font-size: 28px;
+        line-height: 1;
+      }
+      .result-score span {
+        display: inline-flex;
+        margin-top: 7px;
+        padding: 3px 8px;
+        border-radius: 999px;
+        color: var(--wc-green);
+        background: rgba(0,0,0,0.22);
+        font-size: 12px;
+        font-weight: 900;
+      }
+      .result-meta {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .result-meta span {
+        padding: 4px 8px;
+        border: 1px solid var(--wc-line);
+        border-radius: 999px;
+        color: var(--wc-muted);
+        background: rgba(0,0,0,0.16);
+        font-size: 12px;
+      }
       .bracket {
         overflow-x: auto;
         overflow-y: visible;
@@ -933,6 +1382,31 @@ class WorldCupDashboardCard extends HTMLElement {
         .hero { align-items: flex-start; flex-direction: column; }
         .hero-meta { justify-content: flex-start; }
         .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .live-scoreline,
+        .result-row {
+          grid-template-columns: 1fr;
+        }
+        .live-score,
+        .result-score {
+          order: -1;
+        }
+        .result-team.away {
+          justify-content: flex-start;
+          text-align: left;
+        }
+        .compact-match {
+          grid-template-columns: auto 1fr;
+        }
+        .compact-match > strong {
+          grid-column: 1 / -1;
+          text-align: center;
+        }
+        .event-row {
+          grid-template-columns: 40px 1fr;
+        }
+        .event-row em {
+          grid-column: 2;
+        }
       }
     `;
   }

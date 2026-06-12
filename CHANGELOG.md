@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.10
+
+- Added native Live Now, Starting Soon, and Completed Today sections to overview mode.
+- Added parsed match-event display for goals, cards, penalties, fouls, handballs, and own goals when TeamTracker exposes event text.
+- Added persistent completed-results support for bracket mode through `completed_results_helper`.
+- Added a Store Final Result blueprint and helper example for durable group-stage results.
+- Kept knockout bracket slots reserved for real knockout-round TeamTracker data.
+
 ## 0.1.0
 
 - Initial public-ready HACS dashboard card.

@@ -29,7 +29,10 @@ Bracket board:
 - Uses your existing TeamTracker sensors.
 - Works with a few teams or all 48 confirmed World Cup 2026 teams.
 - Keeps user-specific devices configurable through helpers.
+- Shows live matches with scores, flags, clock, venue, TV, and parsed scorer/card/penalty/foul events when TeamTracker exposes them.
+- Shows starting-soon matches and completed matches for today.
 - Shows scores only when TeamTracker has real match data.
+- Shows group-stage completed results above the bracket when `completed_results_helper` is configured.
 - Leaves knockout slots blank until TeamTracker/ESPN publishes real knockout matchups.
 - Provides optional test buttons for selected speaker/TTS and phone notification helpers.
 - Includes an overview mode and a bracket-only mode.
@@ -112,6 +115,7 @@ favorite_team_helper: input_select.world_cup_favorite_team
 announcement_player_helper: input_select.world_cup_announcement_player
 tts_entity_helper: input_select.world_cup_tts_entity
 notification_service_helper: input_select.world_cup_notification_service
+completed_results_helper: input_select.world_cup_completed_results
 show_controls: true
 ```
 
@@ -156,6 +160,8 @@ view_mode: bracket
 
 The bracket tab auto-fills only when TeamTracker/ESPN publishes real knockout matchups. Until then, the bracket intentionally shows clean `TBD` slots instead of fake predictions.
 
+Group-stage results do not fill knockout bracket slots. If you configure `completed_results_helper`, completed group-stage matches appear above the bracket as durable results while the knockout bracket waits for real knockout matchups.
+
 ## Optional Helpers
 
 Copy `examples/helpers-package.yaml` into a Home Assistant package, or create the helpers manually.
@@ -166,6 +172,7 @@ The card can use these helpers:
 - `input_select.world_cup_announcement_player`
 - `input_select.world_cup_tts_entity`
 - `input_select.world_cup_notification_service`
+- `input_select.world_cup_completed_results`
 - `input_boolean.world_cup_kickoff_alerts_enabled`
 - `input_boolean.world_cup_match_start_alerts_enabled`
 - `input_boolean.world_cup_final_score_alerts_enabled`
@@ -180,8 +187,11 @@ The `blueprints/` folder includes optional automation blueprints:
 - Kickoff reminder
 - Match started
 - Final score
+- Store final result
 
 Create automations from the blueprints and select the TeamTracker sensor, media player, TTS service, and notification service for the Home Assistant instance.
+
+For persistent group-stage results on the bracket page, create one `World Cup Store Final Result` automation per home-side TeamTracker match sensor and target `input_select.world_cup_completed_results`.
 
 ## Public Sharing Notes
 

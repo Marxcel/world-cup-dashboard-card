@@ -47,6 +47,11 @@ input_select:
     options:
       - notify.mobile_app_your_phone
       - notify.notify
+  world_cup_completed_results:
+    name: World Cup completed results
+    icon: mdi:scoreboard-outline
+    options:
+      - none|No completed results yet
   world_cup_favorite_team:
     name: World Cup favorite team
     icon: mdi:soccer

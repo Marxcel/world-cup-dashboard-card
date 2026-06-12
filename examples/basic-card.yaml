@@ -8,4 +8,5 @@ favorite_team_helper: input_select.world_cup_favorite_team
 announcement_player_helper: input_select.world_cup_announcement_player
 tts_entity_helper: input_select.world_cup_tts_entity
 notification_service_helper: input_select.world_cup_notification_service
+completed_results_helper: input_select.world_cup_completed_results
 show_controls: true

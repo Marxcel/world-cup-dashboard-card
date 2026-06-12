@@ -1,0 +1,60 @@
+blueprint:
+  name: World Cup Store Final Result
+  description: Store a TeamTracker final score in the completed-results helper so group-stage results remain visible on the bracket page. Create one automation per home-side match sensor to avoid duplicate entries.
+  domain: automation
+  input:
+    team_sensor:
+      name: TeamTracker sensor
+      description: Use the home-side TeamTracker sensor for each match where possible.
+      selector:
+        entity:
+          domain: sensor
+    completed_results_helper:
+      name: Completed results helper
+      description: Input select helper used by the card to show persistent completed results.
+      selector:
+        entity:
+          domain: input_select
+
+trigger:
+  - platform: state
+    entity_id: !input team_sensor
+    to: "POST"
+
+variables:
+  team_sensor: !input team_sensor
+  completed_results_helper: !input completed_results_helper
+  event_id: "{{ trigger.to_state.attributes.event_id }}"
+  match_date: "{{ as_timestamp(trigger.to_state.attributes.date) | timestamp_custom('%Y-%m-%d', true) }}"
+  winner: >
+    {% if trigger.to_state.attributes.team_winner %}
+      {{ trigger.to_state.attributes.team_abbr }}
+    {% elif trigger.to_state.attributes.opponent_winner %}
+      {{ trigger.to_state.attributes.opponent_abbr }}
+    {% else %}
+      DRAW
+    {% endif %}
+  result: >
+    {{ event_id }}|{{ match_date }}|{{ trigger.to_state.attributes.team_abbr }}|{{ trigger.to_state.attributes.team_long_name }}|{{ trigger.to_state.attributes.team_score }}|{{ trigger.to_state.attributes.opponent_abbr }}|{{ trigger.to_state.attributes.opponent_name }}|{{ trigger.to_state.attributes.opponent_score }}|{{ winner | trim }}|{{ trigger.to_state.attributes.season or 'group-stage' }}|{{ trigger.to_state.attributes.clock or 'FT' }}
+
+condition:
+  - condition: template
+    value_template: >
+      {{ event_id and event_id not in (
+        state_attr(completed_results_helper, 'options')
+        | default([], true)
+        | map('regex_replace', '\\|.*$', '')
+        | list
+      ) }}
+
+action:
+  - service: input_select.set_options
+    target:
+      entity_id: !input completed_results_helper
+    data:
+      options: >
+        {% set existing = state_attr(completed_results_helper, 'options') | default([], true) | reject('match', '^none\\|') | list %}
+        {{ (existing + [result]) | unique | list }}
+
+mode: queued
+max: 5
