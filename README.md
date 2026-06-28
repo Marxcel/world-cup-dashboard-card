@@ -47,6 +47,7 @@ Latest bracket with stored results and qualification watch:
 - Shows group-stage completed results above the bracket when `completed_results_helper` is configured.
 - Shows a qualification watch panel for stored results and published knockout matchups without pretending group-stage winners have advanced.
 - Shows a lightweight group pulse for tracked points impact without replacing real group standings.
+- Recognizes TeamTracker knockout rounds from `round` or `season` labels, including values like `round-of-32`.
 - Leaves knockout slots blank until TeamTracker/ESPN publishes real knockout matchups.
 - Provides optional event-type alert controls for goals, cards, penalties, fouls/handballs, and favorite-team-only mode.
 - Provides a notification manager with quiet mode, focus mode, active alert summary, and team phone routing.

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.15
+
+- Fixed knockout bracket detection for TeamTracker sensors that publish the real round in `season` values such as `round-of-32`.
+- Normalized hyphenated and underscored round labels so published knockout matchups fill the bracket instead of staying as `TBD`.
+
 ## 0.1.14
 
 - Added team, result, and bracket-slot drill-down detail panels.

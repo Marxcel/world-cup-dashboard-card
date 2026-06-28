@@ -202,7 +202,6 @@ class WorldCupDashboardCard extends HTMLElement {
 
   getBracketRenderSignature() {
     const teamSensors = this.config.team_sensors || [];
-    const knockoutWords = ["round of 32", "round of 16", "quarter", "semi", "final"];
     const completedResults = this.config.completed_results_helper ? this._hass.states[this.config.completed_results_helper] : null;
     const eventHistory = this.config.event_history_helper ? this._hass.states[this.config.event_history_helper] : null;
     return JSON.stringify({
@@ -214,10 +213,7 @@ class WorldCupDashboardCard extends HTMLElement {
         const state = this._hass.states[entityId];
         if (!state) return [entityId, null];
         const attr = state.attributes || {};
-        const round = String(this.first(attr.round, attr.event_name, attr.league, "")).toLowerCase();
-        const season = String(attr.season || "").toLowerCase();
-        const isKnockout = knockoutWords.some((word) => round.includes(word)) || Boolean(season && season !== "group-stage");
-        if (!isKnockout) return [entityId, "no-knockout-data"];
+        if (!this.isKnockoutMatch(attr)) return [entityId, "no-knockout-data"];
         return [
           entityId,
           this.first(attr.event_url, attr.url, ""),
@@ -299,11 +295,20 @@ class WorldCupDashboardCard extends HTMLElement {
   }
 
   getKnockoutMatches(teams) {
-    const knockoutWords = ["round of 32", "round of 16", "quarter", "semi", "final"];
-    return this.uniqueMatches(teams).filter((team) => {
-      const round = String(team.round || "").toLowerCase();
-      return knockoutWords.some((word) => round.includes(word));
-    });
+    return this.uniqueMatches(teams).filter((team) => this.isKnockoutMatch(team));
+  }
+
+  getRoundText(match) {
+    return [match.round, match.season, match.event_name, match.league]
+      .filter((value) => value !== undefined && value !== null && value !== "")
+      .join(" ")
+      .toLowerCase()
+      .replace(/[-_]+/g, " ");
+  }
+
+  isKnockoutMatch(match) {
+    const round = this.getRoundText(match);
+    return ["round of 32", "round of 16", "quarter", "semi", "final"].some((word) => round.includes(word));
   }
 
   getLiveMatches(teams) {
@@ -1191,7 +1196,7 @@ class WorldCupDashboardCard extends HTMLElement {
   getBracketRounds(matches) {
     const rounds = { r32: [], r16: [], qf: [], sf: [], final: [] };
     matches.forEach((match) => {
-      const round = String(match.round || "").toLowerCase();
+      const round = this.getRoundText(match);
       if (round.includes("round of 32")) rounds.r32.push(match);
       else if (round.includes("round of 16")) rounds.r16.push(match);
       else if (round.includes("quarter")) rounds.qf.push(match);
