@@ -226,7 +226,12 @@ class WorldCupDashboardCard extends HTMLElement {
           Boolean(attr.team_winner),
           Boolean(attr.opponent_winner),
           this.first(attr.clock, attr.status, state.state, ""),
-          this.first(attr.last_play, "")
+          this.first(attr.last_play, ""),
+          this.first(attr.venue, attr.venue_name, ""),
+          this.first(attr.location, ""),
+          this.first(attr.venue_city, ""),
+          this.first(attr.venue_state, ""),
+          this.first(attr.venue_country, "")
         ];
       })
     });
@@ -259,7 +264,11 @@ class WorldCupDashboardCard extends HTMLElement {
           homeAway: this.first(attr.team_homeaway, ""),
           date,
           lastUpdate: this.asDate(this.first(attr.last_update, state.last_updated, state.last_changed)),
-          venue: this.first(attr.venue, attr.location, ""),
+          venue: this.first(attr.venue, attr.venue_name, ""),
+          location: this.first(attr.location, ""),
+          venueCity: this.first(attr.venue_city, ""),
+          venueState: this.first(attr.venue_state, ""),
+          venueCountry: this.first(attr.venue_country, ""),
           tv: this.first(attr.tv_network, attr.broadcast, attr.network, ""),
           round: this.first(attr.round, attr.event_name, attr.league, ""),
           season: this.first(attr.season, ""),
@@ -309,6 +318,28 @@ class WorldCupDashboardCard extends HTMLElement {
   isKnockoutMatch(match) {
     const round = this.getRoundText(match);
     return ["round of 32", "round of 16", "quarter", "semi", "final"].some((word) => round.includes(word));
+  }
+
+  getLocationParts(match) {
+    const explicit = [match.venueCity, match.venueState, match.venueCountry].filter(Boolean);
+    if (explicit.length) return explicit;
+    return String(match.location || "")
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  formatVenue(match, fallback = "Venue TBD") {
+    const stadium = match.venue || "";
+    const parts = this.getLocationParts(match);
+    const city = parts[0] || "";
+    const state = parts[1] || "";
+    const country = parts[2] || "";
+    const location = [city, state || country].filter(Boolean).join(", ");
+    if (stadium && location) return `${stadium} - ${location}`;
+    if (stadium) return stadium;
+    if (location) return location;
+    return fallback;
   }
 
   getLiveMatches(teams) {
@@ -487,7 +518,7 @@ class WorldCupDashboardCard extends HTMLElement {
         </div>
         <div class="facts">
           <span>${this.formatDate(match.date) || "Date TBD"}</span>
-          <span>${this.escape(match.venue || "Venue TBD")}</span>
+          <span>${this.escape(this.formatVenue(match))}</span>
           <span>${this.escape(match.tv || "TV TBD")}</span>
           <span>Status: ${this.escape(match.status || "Unknown")}</span>
         </div>
@@ -536,7 +567,7 @@ class WorldCupDashboardCard extends HTMLElement {
           <span>Next match: ${this.escape(match.name)} vs ${this.escape(match.opponent)}</span>
           <span>Status: ${this.escape(match.status || "Unknown")}</span>
           <span>Kickoff: ${this.formatDate(match.date) || "TBD"}</span>
-          <span>Venue: ${this.escape(match.venue || "TBD")}</span>
+          <span>Venue: ${this.escape(this.formatVenue(match, "TBD"))}</span>
           <span>TV: ${this.escape(match.tv || "TBD")}</span>
         </div>
       </section>
@@ -586,7 +617,7 @@ class WorldCupDashboardCard extends HTMLElement {
           <div><span>Status</span><strong>${this.escape(match.status || "Unknown")}</strong></div>
           <div><span>Score</span><strong>${this.renderScore(match)}</strong></div>
           <div><span>Next kickoff</span><strong>${this.formatDate(match.date) || "TBD"}</strong></div>
-          <div><span>Venue</span><strong>${this.escape(match.venue || "TBD")}</strong></div>
+          <div><span>Venue</span><strong>${this.escape(this.formatVenue(match, "TBD"))}</strong></div>
           <div><span>TV</span><strong>${this.escape(match.tv || "TBD")}</strong></div>
           <div><span>Latest result</span><strong>${latest ? this.escape(`${latest.homeAbbr} ${latest.homeScore} - ${latest.awayScore} ${latest.awayAbbr}`) : "None stored"}</strong></div>
         </div>
@@ -700,7 +731,7 @@ class WorldCupDashboardCard extends HTMLElement {
           <article class="match-row">
             <div>${this.renderTeamBadge(match.logo, match.abbr, match.winner)} ${this.escape(match.abbr)} vs ${this.escape(match.opponentAbbr || match.opponent)}</div>
             <strong>${this.formatDate(match.date) || "TBD"}</strong>
-            <span>${this.escape(match.venue || "")}${match.tv ? ` - ${this.escape(match.tv)}` : ""}</span>
+            <span>${this.escape(this.formatVenue(match, ""))}${match.tv ? ` - ${this.escape(match.tv)}` : ""}</span>
           </article>
         `).join("") : `<p class="muted">${this.escape(emptyText)}</p>`}
       </section>
@@ -748,7 +779,7 @@ class WorldCupDashboardCard extends HTMLElement {
         <span>Status: ${this.escape(match.status || "Unknown")}</span>
         <span>Score: ${this.renderScore(match)}</span>
         <span>Kickoff: ${this.formatDate(match.date) || "TBD"}</span>
-        <span>Venue: ${this.escape(match.venue || "TBD")}</span>
+        <span>Venue: ${this.escape(this.formatVenue(match, "TBD"))}</span>
         <span>TV: ${this.escape(match.tv || "TBD")}</span>
         ${match.url ? `<a href="${this.escape(match.url)}" target="_blank" rel="noreferrer">Open ESPN match</a>` : ""}
       </div>
@@ -836,7 +867,7 @@ class WorldCupDashboardCard extends HTMLElement {
           ${this.renderLiveTeam(match.opponentLogo, match.opponent, match.opponentAbbr, match.opponentWinner)}
         </div>
         <div class="facts">
-          <span>${this.escape(match.venue || "Venue TBD")}</span>
+          <span>${this.escape(this.formatVenue(match))}</span>
           <span>${this.escape(match.tv || "TV TBD")}</span>
         </div>
         ${this.renderMatchEvents(match.lastPlay)}
@@ -930,7 +961,7 @@ class WorldCupDashboardCard extends HTMLElement {
         ${this.renderTeamBadge(match.logo, match.abbr, match.winner)}
         <div><strong>${this.escape(match.name)}</strong><span>${this.escape(match.abbr)}</span></div>
         <strong>${this.escape(centerText || "vs")}</strong>
-        <div><strong>${this.escape(match.opponent)}</strong><span>${this.escape(match.venue || match.tv || "")}</span></div>
+        <div><strong>${this.escape(match.opponent)}</strong><span>${this.escape(this.formatVenue(match, match.tv || ""))}</span></div>
         ${this.renderTeamBadge(match.opponentLogo, match.opponentAbbr, match.opponentWinner)}
       </article>
     `;
@@ -1231,6 +1262,7 @@ class WorldCupDashboardCard extends HTMLElement {
         <small>${this.escape(this.formatDate(match.date) || match.status || title)}</small>
         ${this.renderBracketTeam(match.logo, match.abbr, match.score, match.winner)}
         ${this.renderBracketTeam(match.opponentLogo, match.opponentAbbr || match.opponent, match.opponentScore, match.opponentWinner)}
+        <span class="slot-venue">${this.escape(this.formatVenue(match, "Venue TBD"))}</span>
         <details class="bracket-drilldown">
           <summary>Details</summary>
           ${this.renderMatchDrilldown(match)}
@@ -2009,7 +2041,7 @@ class WorldCupDashboardCard extends HTMLElement {
         background: rgba(255,255,255,0.96);
         color: #10131d;
         display: grid;
-        grid-template-rows: auto 1fr 1fr;
+        grid-template-rows: auto 1fr 1fr auto;
         gap: 5px;
         align-content: center;
         box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
@@ -2061,6 +2093,15 @@ class WorldCupDashboardCard extends HTMLElement {
         overflow: hidden;
         white-space: nowrap;
         text-overflow: ellipsis;
+      }
+      .slot-venue {
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        color: rgba(16, 19, 29, 0.62);
+        font-size: 10px;
+        font-weight: 800;
       }
       .team-line {
         width: 26px;

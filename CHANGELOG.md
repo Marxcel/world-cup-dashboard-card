@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.16
+
+- Added stadium and city/state location display across match cards, live matches, compact match rows, focus mode, and bracket drill-down details.
+- Added compact stadium/location text directly inside populated bracket slots.
+- Included venue/location fields in bracket refresh tracking so stadium updates refresh automatically.
+
 ## 0.1.15
 
 - Fixed knockout bracket detection for TeamTracker sensors that publish the real round in `season` values such as `round-of-32`.

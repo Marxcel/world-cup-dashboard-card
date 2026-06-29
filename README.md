@@ -38,6 +38,7 @@ Latest bracket with stored results and qualification watch:
 - Works with a few teams or all 48 confirmed World Cup 2026 teams.
 - Keeps user-specific devices configurable through helpers.
 - Shows live matches with scores, flags, clock, venue, TV, and parsed scorer/card/penalty/foul events when TeamTracker exposes them.
+- Shows stadium plus city/state or country anywhere TeamTracker exposes venue and location data.
 - Adds team/result/bracket drill-down details with match context, recent result, venue, TV, and ESPN links when available.
 - Adds a favorite-team focus mode for a selected team's match path, score, kickoff, venue, TV, and latest result.
 - Shows starting-soon matches and completed matches for today.
