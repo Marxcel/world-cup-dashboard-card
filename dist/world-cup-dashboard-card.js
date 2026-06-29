@@ -778,9 +778,9 @@ class WorldCupDashboardCard extends HTMLElement {
         <span>${this.escape(match.name)} vs ${this.escape(match.opponent)}</span>
         <span>Status: ${this.escape(match.status || "Unknown")}</span>
         <span>Score: ${this.renderScore(match)}</span>
-        <span>Kickoff: ${this.formatDate(match.date) || "TBD"}</span>
-        <span>Venue: ${this.escape(this.formatVenue(match, "TBD"))}</span>
-        <span>TV: ${this.escape(match.tv || "TBD")}</span>
+        ${match.derived ? `<span>Advanced from: ${this.escape(match.lastPlay || "confirmed winners")}</span>` : `<span>Kickoff: ${this.formatDate(match.date) || "TBD"}</span>`}
+        ${!match.derived ? `<span>Venue: ${this.escape(this.formatVenue(match, "TBD"))}</span>` : ""}
+        ${!match.derived ? `<span>TV: ${this.escape(match.tv || "TBD")}</span>` : ""}
         ${match.url ? `<a href="${this.escape(match.url)}" target="_blank" rel="noreferrer">Open ESPN match</a>` : ""}
       </div>
     `;
@@ -995,7 +995,7 @@ class WorldCupDashboardCard extends HTMLElement {
   }
 
   renderKnockout(matches) {
-    const byRound = this.getBracketRounds(matches);
+    const byRound = this.getDerivedBracketRounds(matches);
     return `
       <section class="panel bracket color-field">
         <div class="section-head">
@@ -1027,7 +1027,7 @@ class WorldCupDashboardCard extends HTMLElement {
           ${this.renderBracketColumn("Round of 16", byRound.r16.slice(4, 8), 4, "r16")}
           ${this.renderBracketColumn("Round of 32", byRound.r32.slice(8, 16), 8, "r32")}
         </div>
-        <p class="muted">The bracket updates from TeamTracker when real knockout matchups are available. It does not use prediction placeholders.</p>
+        <p class="muted">The bracket updates from TeamTracker and advances only confirmed knockout winners. It does not use prediction placeholders.</p>
       </section>
     `;
   }
@@ -1238,6 +1238,88 @@ class WorldCupDashboardCard extends HTMLElement {
     return rounds;
   }
 
+  getDerivedBracketRounds(matches) {
+    const rounds = this.getBracketRounds(matches);
+    this.fillDerivedRound(rounds.r32, rounds.r16, "Round of 16", "round-of-16");
+    this.fillDerivedRound(rounds.r16, rounds.qf, "Quarter Finals", "quarter-finals");
+    this.fillDerivedRound(rounds.qf, rounds.sf, "Semi Finals", "semi-finals");
+    this.fillDerivedRound(rounds.sf, rounds.final, "Final", "final");
+    return rounds;
+  }
+
+  fillDerivedRound(sourceRound, targetRound, title, season) {
+    for (let index = 0; index < sourceRound.length; index += 2) {
+      const targetIndex = Math.floor(index / 2);
+      if (targetRound[targetIndex]) continue;
+      const first = this.getAdvancingTeam(sourceRound[index]);
+      const second = this.getAdvancingTeam(sourceRound[index + 1]);
+      if (!first && !second) continue;
+      targetRound[targetIndex] = this.createDerivedMatch(first, second, title, season, targetIndex + 1);
+    }
+  }
+
+  getAdvancingTeam(match) {
+    if (!match) return null;
+    const directWinner = match.winner ? "team" : match.opponentWinner ? "opponent" : "";
+    const scoredWinner = directWinner || this.getScoreWinnerSide(match);
+    if (scoredWinner === "team") {
+      return {
+        abbr: match.abbr,
+        name: match.name,
+        logo: match.logo,
+        source: `${match.abbr} def. ${match.opponentAbbr || match.opponent}`
+      };
+    }
+    if (scoredWinner === "opponent") {
+      return {
+        abbr: match.opponentAbbr || match.opponent,
+        name: match.opponent,
+        logo: match.opponentLogo,
+        source: `${match.opponentAbbr || match.opponent} def. ${match.abbr}`
+      };
+    }
+    return null;
+  }
+
+  getScoreWinnerSide(match) {
+    const finalState = ["POST", "FINAL", "FT"].includes(String(match.state || "").toUpperCase())
+      || ["final", "full time", "ft"].some((word) => String(match.status || "").toLowerCase().includes(word));
+    if (!finalState) return "";
+    const score = Number(match.score);
+    const opponentScore = Number(match.opponentScore);
+    if (!Number.isFinite(score) || !Number.isFinite(opponentScore) || score === opponentScore) return "";
+    return score > opponentScore ? "team" : "opponent";
+  }
+
+  createDerivedMatch(first, second, title, season, index) {
+    const home = first || {};
+    const away = second || {};
+    return {
+      state: "ADVANCED",
+      status: `${title} projected from confirmed winners`,
+      eventId: `derived-${season}-${index}`,
+      abbr: home.abbr || "TBD",
+      name: home.name || home.abbr || "TBD",
+      logo: home.logo || "",
+      score: "",
+      winner: false,
+      opponentAbbr: away.abbr || "TBD",
+      opponent: away.name || away.abbr || "TBD",
+      opponentLogo: away.logo || "",
+      opponentScore: "",
+      opponentWinner: false,
+      date: null,
+      venue: "",
+      location: "",
+      tv: "",
+      round: title,
+      season,
+      clock: "",
+      lastPlay: [home.source, away.source].filter(Boolean).join(" | "),
+      derived: true
+    };
+  }
+
   renderBracketColumn(title, matches, count, className) {
     return `
       <div class="bracket-col ${className}" id="wc-${className}">
@@ -1258,11 +1340,11 @@ class WorldCupDashboardCard extends HTMLElement {
       `;
     }
     return `
-      <article class="bracket-slot ${match.winner || match.opponentWinner ? "played" : ""}">
-        <small>${this.escape(this.formatDate(match.date) || match.status || title)}</small>
+      <article class="bracket-slot ${match.winner || match.opponentWinner ? "played" : ""} ${match.derived ? "advanced" : ""}">
+        <small>${this.escape(match.derived ? "Confirmed winners" : this.formatDate(match.date) || match.status || title)}</small>
         ${this.renderBracketTeam(match.logo, match.abbr, match.score, match.winner)}
         ${this.renderBracketTeam(match.opponentLogo, match.opponentAbbr || match.opponent, match.opponentScore, match.opponentWinner)}
-        <span class="slot-venue">${this.escape(this.formatVenue(match, "Venue TBD"))}</span>
+        ${!match.derived ? `<span class="slot-venue">${this.escape(this.formatVenue(match, "Venue TBD"))}</span>` : `<span class="slot-venue">Auto-advanced from final scores</span>`}
         <details class="bracket-drilldown">
           <summary>Details</summary>
           ${this.renderMatchDrilldown(match)}
@@ -2064,6 +2146,10 @@ class WorldCupDashboardCard extends HTMLElement {
       .bracket-slot.empty {
         background: rgba(255,255,255,0.88);
         color: rgba(16, 19, 29, 0.72);
+      }
+      .bracket-slot.advanced {
+        border-color: rgba(30, 113, 79, 0.72);
+        background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(226, 245, 236, 0.96));
       }
       .bracket-slot small {
         overflow: hidden;

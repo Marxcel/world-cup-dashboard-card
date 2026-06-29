@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.17
+
+- Added confirmed-winner auto-advancement for knockout rounds so completed Round of 32 winners fill the matching Round of 16 slot before TeamTracker publishes the next fixture.
+- Marked auto-advanced slots as confirmed winners and included the source results in bracket details.
+- Kept future slots blank until their source matches have final scores or TeamTracker publishes the real matchup.
+
 ## 0.1.16
 
 - Added stadium and city/state location display across match cards, live matches, compact match rows, focus mode, and bracket drill-down details.
