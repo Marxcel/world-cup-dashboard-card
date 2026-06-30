@@ -90,7 +90,7 @@ class WorldCupDashboardCard extends HTMLElement {
             ${this.renderQualificationTracker(teams, knockout, completedResults)}
             ${this.renderGroupPulse(completedResults)}
             ${this.renderHistoryLog(eventHistory)}
-            ${this.renderKnockout(knockout)}
+            ${this.renderKnockout(knockout, completedResults)}
           </div>
         </ha-card>
       `;
@@ -443,6 +443,7 @@ class WorldCupDashboardCard extends HTMLElement {
   parseStoredResult(line, logos) {
     const [eventId, date, homeAbbr, homeName, homeScore, awayAbbr, awayName, awayScore, winner, stage, clock] = String(line).split("|");
     if (!eventId || !homeAbbr || !awayAbbr) return null;
+    const resultWinner = winner || this.inferResultWinner(homeScore, awayScore, homeAbbr, awayAbbr);
     return {
       eventId,
       date: this.asDate(date),
@@ -452,7 +453,7 @@ class WorldCupDashboardCard extends HTMLElement {
       awayAbbr,
       awayName,
       awayScore,
-      winner,
+      winner: resultWinner,
       stage,
       clock,
       homeLogo: logos[homeAbbr] || "",
@@ -466,21 +467,46 @@ class WorldCupDashboardCard extends HTMLElement {
     const awayScore = homeIsTeam ? match.opponentScore : match.score;
     const homeWinner = homeIsTeam ? match.winner : match.opponentWinner;
     const awayWinner = homeIsTeam ? match.opponentWinner : match.winner;
+    const homeAbbr = homeIsTeam ? match.abbr : match.opponentAbbr;
+    const awayAbbr = homeIsTeam ? match.opponentAbbr : match.abbr;
+    const inferredWinner = this.inferResultWinner(homeScore, awayScore, homeAbbr, awayAbbr);
     return {
       eventId: match.eventId,
       date: match.date,
-      homeAbbr: homeIsTeam ? match.abbr : match.opponentAbbr,
+      homeAbbr,
       homeName: homeIsTeam ? match.name : match.opponent,
       homeScore,
-      awayAbbr: homeIsTeam ? match.opponentAbbr : match.abbr,
+      awayAbbr,
       awayName: homeIsTeam ? match.opponent : match.name,
       awayScore,
-      winner: homeWinner ? (homeIsTeam ? match.abbr : match.opponentAbbr) : awayWinner ? (homeIsTeam ? match.opponentAbbr : match.abbr) : "DRAW",
+      winner: homeWinner ? homeAbbr : awayWinner ? awayAbbr : inferredWinner,
       stage: match.season || "group-stage",
       clock: match.clock || match.status,
       homeLogo: homeIsTeam ? match.logo : match.opponentLogo,
       awayLogo: homeIsTeam ? match.opponentLogo : match.logo
     };
+  }
+
+  parseScoreValue(value) {
+    const text = String(value ?? "");
+    const main = Number((text.match(/^-?\d+/) || [])[0]);
+    const shootout = Number((text.match(/\((\d+)\)/) || [])[1]);
+    return {
+      main: Number.isFinite(main) ? main : null,
+      shootout: Number.isFinite(shootout) ? shootout : null
+    };
+  }
+
+  inferResultWinner(homeScore, awayScore, homeAbbr, awayAbbr) {
+    const home = this.parseScoreValue(homeScore);
+    const away = this.parseScoreValue(awayScore);
+    if (home.shootout !== null && away.shootout !== null && home.shootout !== away.shootout) {
+      return home.shootout > away.shootout ? homeAbbr : awayAbbr;
+    }
+    if (home.main !== null && away.main !== null && home.main !== away.main) {
+      return home.main > away.main ? homeAbbr : awayAbbr;
+    }
+    return "DRAW";
   }
 
   renderHero() {
@@ -994,13 +1020,14 @@ class WorldCupDashboardCard extends HTMLElement {
     `;
   }
 
-  renderKnockout(matches) {
-    const byRound = this.getDerivedBracketRounds(matches);
+  renderKnockout(matches, completedResults = []) {
+    const bracketMatches = this.mergeKnockoutResults(matches, completedResults);
+    const byRound = this.getDerivedBracketRounds(bracketMatches);
     return `
       <section class="panel bracket color-field">
         <div class="section-head">
           <h2>World Cup Auto Bracket</h2>
-          <span>${matches.length ? "Live data" : "Waiting for knockout stage"}</span>
+          <span>${bracketMatches.length ? "Live data" : "Waiting for knockout stage"}</span>
         </div>
         <div class="bracket-toolbar" aria-label="Bracket navigation">
           <a href="#wc-results">Results</a>
@@ -1019,7 +1046,7 @@ class WorldCupDashboardCard extends HTMLElement {
             ${this.renderBracketSlot(byRound.final[0], "Final", 101)}
             <div class="champion-card">
               <span>Champions</span>
-              <strong>${this.getChampionName(matches)}</strong>
+              <strong>${this.getChampionNameFromFinal(byRound.final[0])}</strong>
             </div>
           </div>
           ${this.renderBracketColumn("Semi Finals", byRound.sf.slice(1, 2), 1, "sf")}
@@ -1238,6 +1265,51 @@ class WorldCupDashboardCard extends HTMLElement {
     return rounds;
   }
 
+  mergeKnockoutResults(matches, completedResults = []) {
+    const merged = [...matches];
+    const seenEvents = new Set(matches.map((match) => match.eventId).filter(Boolean));
+    completedResults.forEach((result) => {
+      if (!this.isKnockoutResult(result) || !result.eventId || seenEvents.has(result.eventId)) return;
+      merged.push(this.resultToMatch(result));
+      seenEvents.add(result.eventId);
+    });
+    return merged;
+  }
+
+  isKnockoutResult(result) {
+    return this.isKnockoutMatch({ round: result.stage, season: result.stage });
+  }
+
+  resultToMatch(result) {
+    const homeWinner = result.winner === result.homeAbbr;
+    const awayWinner = result.winner === result.awayAbbr;
+    return {
+      state: "POST",
+      status: result.clock || "FT",
+      eventId: result.eventId,
+      abbr: result.homeAbbr,
+      name: result.homeName || result.homeAbbr,
+      logo: result.homeLogo || "",
+      score: result.homeScore,
+      winner: homeWinner,
+      opponentAbbr: result.awayAbbr,
+      opponent: result.awayName || result.awayAbbr,
+      opponentLogo: result.awayLogo || "",
+      opponentScore: result.awayScore,
+      opponentWinner: awayWinner,
+      homeAway: "home",
+      date: result.date,
+      venue: "",
+      location: "",
+      tv: "",
+      round: result.stage || "",
+      season: result.stage || "",
+      clock: result.clock || "FT",
+      lastPlay: "",
+      storedResult: true
+    };
+  }
+
   getDerivedBracketRounds(matches) {
     const rounds = this.getBracketRounds(matches);
     this.fillDerivedRound(rounds.r32, rounds.r16, "Round of 16", "round-of-16");
@@ -1254,8 +1326,15 @@ class WorldCupDashboardCard extends HTMLElement {
       const first = this.getAdvancingTeam(sourceRound[index]);
       const second = this.getAdvancingTeam(sourceRound[index + 1]);
       if (!first && !second) continue;
+      if (this.hasTeamInRound(targetRound, first?.abbr) || this.hasTeamInRound(targetRound, second?.abbr)) continue;
       targetRound[targetIndex] = this.createDerivedMatch(first, second, title, season, targetIndex + 1);
     }
+  }
+
+  hasTeamInRound(round, abbr) {
+    if (!abbr) return false;
+    const key = String(abbr).toUpperCase();
+    return round.some((match) => [match.abbr, match.opponentAbbr].some((team) => String(team || "").toUpperCase() === key));
   }
 
   getAdvancingTeam(match) {
@@ -1296,7 +1375,7 @@ class WorldCupDashboardCard extends HTMLElement {
     const away = second || {};
     return {
       state: "ADVANCED",
-      status: `${title} projected from confirmed winners`,
+      status: `${title} confirmed from prior winners`,
       eventId: `derived-${season}-${index}`,
       abbr: home.abbr || "TBD",
       name: home.name || home.abbr || "TBD",
@@ -1366,6 +1445,10 @@ class WorldCupDashboardCard extends HTMLElement {
 
   getChampionName(matches) {
     const final = this.getBracketRounds(matches).final[0];
+    return this.getChampionNameFromFinal(final);
+  }
+
+  getChampionNameFromFinal(final) {
     if (!final) return "TBD";
     if (final.winner) return final.abbr || final.name || "TBD";
     if (final.opponentWinner) return final.opponentAbbr || final.opponent || "TBD";

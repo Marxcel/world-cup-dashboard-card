@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.18
+
+- Preferred published TeamTracker next-round fixtures over derived bracket slots so teams stay in the correct bracket group when the feed advances.
+- Added stored knockout-result fallback so completed prior-round results can still support the bracket after a team sensor moves to its next match.
+- Inferred winners from stored scores, including penalty notation such as `1(3)-1(4)`.
+- Prevented duplicate teams from appearing in derived next-round slots when that team already has a published next-round fixture.
+
 ## 0.1.17
 
 - Added confirmed-winner auto-advancement for knockout rounds so completed Round of 32 winners fill the matching Round of 16 slot before TeamTracker publishes the next fixture.

@@ -50,6 +50,7 @@ Latest bracket with stored results and qualification watch:
 - Shows a lightweight group pulse for tracked points impact without replacing real group standings.
 - Recognizes TeamTracker knockout rounds from `round` or `season` labels, including values like `round-of-32`.
 - Auto-advances confirmed knockout winners into the next bracket round while leaving unplayed or undecided paths blank.
+- Prefers published TeamTracker next-round fixtures over derived bracket slots so advanced teams stay in the correct matchup.
 - Leaves undecided knockout slots blank until TeamTracker/ESPN publishes real matchups or earlier-round winners are confirmed.
 - Provides optional event-type alert controls for goals, cards, penalties, fouls/handballs, and favorite-team-only mode.
 - Provides a notification manager with quiet mode, focus mode, active alert summary, and team phone routing.
